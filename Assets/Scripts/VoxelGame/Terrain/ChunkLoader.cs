@@ -1,46 +1,45 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using Utils;
+using Priority_Queue;
 
 namespace VoxelGame.Terrain
 { 
     public class ChunkLoader
     {
-        private SimplePriorityQueue<Chunk> _chunkLoadQueue;
+        private readonly FastPriorityQueue<ChunkLoadTask> _chunkLoadQueue = new(10000);
 
-        private readonly int _loadXChunksPerSecond;
+        private readonly int _numLoadsPerSecond;
         private readonly float _timeBetweenLoads;
         private float _loadCountdown;
 
-        public ChunkLoader(int loadXChunksPerSecond)
+        public ChunkLoader(int numLoadsPerSecond)
         {
-			_chunkLoadQueue = new SimplePriorityQueue<Chunk>();
-
-            _loadXChunksPerSecond = loadXChunksPerSecond;
-            _timeBetweenLoads = 1 / (float) _loadXChunksPerSecond;
+            _numLoadsPerSecond = numLoadsPerSecond;
+            _timeBetweenLoads = 1 / (float) _numLoadsPerSecond;
             _loadCountdown = _timeBetweenLoads;
         }
 
-        public void ScheduleForLoad(Chunk chunk)
+        public void ScheduleForLoad(Chunk chunk, int priority)
         {
-            // Calculate the chunks distance from the nearest player.
-            var chunkPriority = 0;
-
-            _chunkLoadQueue.Enqueue(chunk, chunkPriority);
-        }
-
-        public void ScheduleForCleanup(Chunk chunk)
-        { 
-        
+            _chunkLoadQueue.Enqueue(new ChunkLoadTask(chunk), priority);
         }
 
         public void Update(float deltaTime)
         {
             _loadCountdown -= deltaTime;
+
+            if (_chunkLoadQueue.Count <= 0)
+            {
+                return; // Nothing to do.
+            }
+
             if (_loadCountdown <= 0)
             {
-                //chunk.
+                Chunk chunk;
+                do
+                {
+                    chunk = _chunkLoadQueue.Dequeue().Chunk;
+                } while (chunk == null && _chunkLoadQueue.Count > 0);
+
+                chunk.Load(false, new System.Threading.CancellationToken());
 
                 _loadCountdown = _timeBetweenLoads;
             }

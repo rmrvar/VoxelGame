@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 namespace VoxelGame.Terrain
@@ -23,6 +24,8 @@ namespace VoxelGame.Terrain
 		[SerializeField] private Transform _playerTransform = null;
 		[SerializeField] private float _playerViewDistance = 50;
 
+        [SerializeField] private int _numLoadsPerSecond = 8;
+
 		private void Awake()
 		{
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
@@ -36,6 +39,8 @@ namespace VoxelGame.Terrain
 
 			Instance = this;
 
+            _chunkLoader = new ChunkLoader(_numLoadsPerSecond);
+
 			Init();
 		}
 
@@ -47,8 +52,9 @@ namespace VoxelGame.Terrain
 			_loadTimer = _loadCooldown;
 		}
 
-		private float _loadCooldown = 0.1F;
+		private float _loadCooldown = 2;
 		private float _loadTimer;
+
 		private void Update()
 		{
 			_loadTimer -= Time.deltaTime;
@@ -58,7 +64,9 @@ namespace VoxelGame.Terrain
 				ShowChunksWithinView();
 				_loadTimer = _loadCooldown;
 			}
-		}
+
+            _chunkLoader.Update(Time.deltaTime);
+        }
 
 		public Vector2Int GetChunkID(Vector3 pos)
 		{
@@ -98,13 +106,21 @@ namespace VoxelGame.Terrain
 				}
 				else
 				{  // We have to create this Chunk.
+
 					//Debug.Log("Spawning Chunk " + chunkId);
 					chunk = Instantiate(_chunkPrefab, chunkPos, Quaternion.identity, this.transform);
-					chunk.Load(false, new System.Threading.CancellationToken());
+
+					var sqrDistToPlayer = (chunkPos - _playerTransform.position).sqrMagnitude;
+                    int priority = (int) sqrDistToPlayer;
+
+                    chunk.Load(false, new CancellationToken());
+					//_chunkLoader.ScheduleForLoad(chunk, priority);
 
 					_chunks.Add(chunkId, chunk);
 				}
 			}
 		}
-	}
+
+        private ChunkLoader _chunkLoader;
+    }
 }
