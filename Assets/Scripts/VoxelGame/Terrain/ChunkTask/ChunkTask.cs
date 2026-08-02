@@ -9,11 +9,13 @@ namespace VoxelGame.Terrain.ChunkTask
         : FastPriorityQueueNode
     {
         public ChunkTaskScheduler Scheduler { get; set; }
+        public int Priority { get; private set; }
         public CancellationToken Token { get; }
 
-        public ChunkTask(ChunkTaskScheduler scheduler, CancellationToken token)
+        public ChunkTask(ChunkTaskScheduler scheduler, int priority, CancellationToken token)
         {
             Scheduler = scheduler;
+            Priority = priority;
             Token = token;
         }
 
@@ -48,8 +50,8 @@ namespace VoxelGame.Terrain.ChunkTask
         : ChunkTask
         where TIn : IDisposable
     {
-        public ChunkTask(ChunkTaskScheduler scheduler, CancellationToken token)
-            : base(scheduler, token)
+        public ChunkTask(ChunkTaskScheduler scheduler, int priority, CancellationToken token)
+            : base(scheduler, priority, token)
         {
         }
 
