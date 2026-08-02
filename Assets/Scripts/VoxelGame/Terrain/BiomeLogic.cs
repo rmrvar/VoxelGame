@@ -2,38 +2,21 @@ using UnityEngine;
 
 namespace VoxelGame.Terrain
 { 
-	public class BiomeLogic
+	public static class BiomeLogic
 	{
-		private Vector3 _offset;
-		private Vector3 _offset2;
-		private Vector3 _offset3;
-		private Vector3 _offset4;
-		private Vector3 _offset5;
-		private Vector3 _offset6;
+        private static Vector3 _offset = Random.insideUnitSphere* 20000;
+        private static Vector3 _offset2 = Random.insideUnitSphere * 20000;
+        private static Vector3 _offset3 = Random.insideUnitSphere * 20000;		
+        private static Vector3 _offset4 = Random.insideUnitSphere * 20000;		
+        private static Vector3 _offset5 = Random.insideUnitSphere * 20000;		
 
-		public BiomeLogic(int seed)
-		{
-			Random.InitState(seed);
-			_offset = Random.insideUnitSphere * 20000;
-			_offset2 = Random.insideUnitSphere * 20000;
-			_offset3 = Random.insideUnitSphere * 20000;
-			_offset4 = Random.insideUnitSphere * 20000;
-			_offset5 = Random.insideUnitSphere * 20000;
-
-			Debug.Log(_offset);
-			Debug.Log(_offset2);
-			Debug.Log(_offset3);
-			Debug.Log(_offset4);
-			Debug.Log(_offset5);
-		}
-
-		private int GetFlatlandHeight(Vector3 voxelWorldPosition, Vector3 swappedVoxelWorldPosition)
+		private static int GetFlatlandHeight(Vector3 voxelWorldPosition, Vector3 swappedVoxelWorldPosition)
 		{
 			var flatlandPos = (voxelWorldPosition + _offset3) * 0.01F;
 			return Mathf.FloorToInt(Mathf.PerlinNoise(flatlandPos.x, flatlandPos.z) * 10);
 		}
 
-		private int GetHillsHeight(float biomeVal, Vector3 voxelWorldPosition, Vector3 swappedVoxelWorldPosition)
+		private static int GetHillsHeight(float biomeVal, Vector3 voxelWorldPosition, Vector3 swappedVoxelWorldPosition)
 		{
 			var hillsPos = Vector3.Scale(swappedVoxelWorldPosition + _offset2, new Vector3(0.02F, 0, -0.02F));
 
@@ -51,7 +34,7 @@ namespace VoxelGame.Terrain
 			return hillsHeight;
 		}
 
-		private int GetMountainsHeight(float biomeVal, Vector3 voxelWorldPosition, Vector3 swappedVoxelWorldPosition)
+		private static int GetMountainsHeight(float biomeVal, Vector3 voxelWorldPosition, Vector3 swappedVoxelWorldPosition)
 		{
 			var mountainsPos = (swappedVoxelWorldPosition + _offset5) * 0.005F;
 
@@ -71,7 +54,7 @@ namespace VoxelGame.Terrain
 			return mountainsHeight;
 		}
 
-		private int GetPlateauHeight(float biomeVal, Vector3 voxelWorldPosition, Vector3 swappedVoxelWorldPosition)
+		private static int GetPlateauHeight(float biomeVal, Vector3 voxelWorldPosition, Vector3 swappedVoxelWorldPosition)
 		{
 			var mountainsPos = (swappedVoxelWorldPosition + _offset5) * 0.005F;
 
@@ -91,7 +74,7 @@ namespace VoxelGame.Terrain
 			return mountainsHeight;
 		}
 
-		public VoxelData.VoxelType GetVoxelType(Vector3Int voxelWorldPosition, int heightAtThisPosition)
+		public static VoxelData.VoxelType GetVoxelType(Vector3Int voxelWorldPosition, int heightAtThisPosition)
 		{
 			var transformedPos = Vector3.Scale(voxelWorldPosition + _offset2, new Vector3(+0.0316F, -0.0356F));
 			var dirtyDepth = Mathf.FloorToInt(Mathf.PerlinNoise(transformedPos.x, transformedPos.z) * 5) + 1;
@@ -110,7 +93,7 @@ namespace VoxelGame.Terrain
 			}
 		}
 
-		public int GetHeight(Vector3 voxelWorldPosition)
+		public static int GetHeight(Vector3 voxelWorldPosition)
 		{
 			//if (voxelWorldPosition == new Vector3(0, 0, 0))
 			//{
