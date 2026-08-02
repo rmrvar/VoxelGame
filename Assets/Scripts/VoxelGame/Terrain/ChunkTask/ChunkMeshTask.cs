@@ -6,7 +6,13 @@ namespace VoxelGame.Terrain.ChunkTask
     public class ChunkMeshTask
         : ChunkTask<ChunkMeshTaskIn, ChunkMeshTaskOut>
     {
-        public ChunkMeshTask(ChunkTaskScheduler scheduler, int priority, CancellationToken token) : base(scheduler, priority, token)
+        public ChunkMeshTask(
+            Chunk chunk,
+            ChunkTaskScheduler scheduler,
+            int priority,
+            CancellationToken token
+          )
+            : base(chunk, scheduler, priority, token)
         {
         }
 

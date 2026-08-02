@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.Serialization;
+using VoxelGame.Terrain.ChunkTask;
 
 namespace VoxelGame.Terrain
 {
@@ -24,7 +26,9 @@ namespace VoxelGame.Terrain
 		[SerializeField] private Transform _playerTransform = null;
 		[SerializeField] private float _playerViewDistance = 50;
 
-        [SerializeField] private int _numLoadsPerSecond = 8;
+        [SerializeField] private float _chunkRefreshCooldown = 1;
+        [SerializeField] private int _numTaskExecutors = 8;
+        [SerializeField] private int _numTaskExecutesPerSecond = 8;
 
 		private void Awake()
 		{
@@ -39,7 +43,7 @@ namespace VoxelGame.Terrain
 
 			Instance = this;
 
-            _chunkLoader = new ChunkLoader(_numLoadsPerSecond);
+            _chunkTaskScheduler = new ChunkTaskScheduler(_numTaskExecutors, _numTaskExecutesPerSecond);
 
 			Init();
 		}
@@ -49,23 +53,21 @@ namespace VoxelGame.Terrain
 			BiomeLogic = new BiomeLogic(_worldSeed);
 
 			_chunks = new Dictionary<Vector2Int, Chunk>();
-			_loadTimer = _loadCooldown;
+			_chunkRefreshTimer = _chunkRefreshCooldown;
 		}
 
-		private float _loadCooldown = 2;
-		private float _loadTimer;
 
 		private void Update()
 		{
-			_loadTimer -= Time.deltaTime;
-			if (_loadTimer <= 0)
+			_chunkRefreshTimer -= Time.deltaTime;
+			if (_chunkRefreshTimer <= 0)
 			{
 				//Debug.Log("Loading chunks!");
 				ShowChunksWithinView();
-				_loadTimer = _loadCooldown;
+				_chunkRefreshTimer = _chunkRefreshCooldown;
 			}
 
-            _chunkLoader.Update(Time.deltaTime);
+            _chunkTaskScheduler.Update(Time.deltaTime);
         }
 
 		public Vector2Int GetChunkID(Vector3 pos)
@@ -106,21 +108,21 @@ namespace VoxelGame.Terrain
 				}
 				else
 				{  // We have to create this Chunk.
-
 					//Debug.Log("Spawning Chunk " + chunkId);
 					chunk = Instantiate(_chunkPrefab, chunkPos, Quaternion.identity, this.transform);
+                    _chunks.Add(chunkId, chunk);
 
 					var sqrDistToPlayer = (chunkPos - _playerTransform.position).sqrMagnitude;
                     int priority = (int) sqrDistToPlayer;
 
-                    chunk.Load(false, new CancellationToken());
-					//_chunkLoader.ScheduleForLoad(chunk, priority);
-
-					_chunks.Add(chunkId, chunk);
+					// Schedule the chunk's tasks.
+                    _chunkTaskScheduler.Schedule(new ChunkLoadTask(chunk, _chunkTaskScheduler, priority, CancellationToken.None));
+                    _chunkTaskScheduler.Schedule(new ChunkMeshTask(chunk, _chunkTaskScheduler, priority, CancellationToken.None));
 				}
 			}
 		}
 
-        private ChunkLoader _chunkLoader;
+        private ChunkTaskScheduler _chunkTaskScheduler;
+		private float _chunkRefreshTimer;
     }
 }
