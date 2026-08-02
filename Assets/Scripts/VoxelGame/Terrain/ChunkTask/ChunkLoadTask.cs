@@ -135,7 +135,7 @@ namespace VoxelGame.Terrain.ChunkTask
                 {
                     var pos = new Vector3Int(x, y, z);
                     var worldPos = _in.Position + pos;
-                    var voxelType = ChunkManager.Instance.BiomeLogic.GetVoxelType(worldPos, _in.Heightmap[pos.x, pos.z]);
+                    var voxelType = BiomeLogic.GetVoxelType(worldPos, _in.Heightmap[pos.x, pos.z]);
                     var voxel = new Voxel(pos, voxelType, biome);
 
                     voxels.Add(pos, voxel);
