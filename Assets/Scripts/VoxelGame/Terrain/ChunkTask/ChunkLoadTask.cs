@@ -71,7 +71,7 @@ namespace VoxelGame.Terrain.ChunkTask
             {
                 Token.ThrowIfCancellationRequested();
                 Vector3 position = _in.Position + new Vector3(x, 0, z);
-                _in.Heightmap[x, z] = ChunkManager.Instance.BiomeLogic.GetHeight(position);
+                _in.Heightmap[x, z] = BiomeLogic.GetHeight(position);
             }
         }
 
