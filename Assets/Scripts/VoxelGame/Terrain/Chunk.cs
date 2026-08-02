@@ -15,11 +15,11 @@ namespace VoxelGame.Terrain
 			FINISHED_LOADING
 		}
 
-		public LoadStatus Status { get; private set; }
+		public LoadStatus Status { get; set; }
 		
 		public Vector3Int Position { get; private set; }
 
-		private Dictionary<Vector3Int, Voxel> _voxels;
+		public Dictionary<Vector3Int, Voxel> Voxels { get; set; }
 
 		// The height densities of solid blocks.
 		private Dictionary<int, int> _heightDensities;
@@ -191,138 +191,6 @@ namespace VoxelGame.Terrain
 
 		}
 
-		private void Initialize()
-		{
-
-		}
-
-		private void GenerateBiomesmap()
-		{
-
-		}
-
-		private void GenerateHeightmap()
-		{
-			var chunkSize = ChunkManager.Instance.ChunkSize;
-
-			_heightmap = new int[chunkSize.x + 2, chunkSize.y + 2];
-			for (int z = 0; z < _heightmap.GetLength(1); ++z)
-			for (int x = 0; x < _heightmap.GetLength(0); ++x)
-			{
-				_heightmap[x, z] = ChunkManager.Instance.BiomeLogic.GetHeight(new Vector3(x - 1, 0, z - 1) + Position);
-			}
-		}
-
-		private void GenerateVoxels()
-		{
-			var chunkSize = ChunkManager.Instance.ChunkSize;
-
-			_voxels = new Dictionary<Vector3Int, Voxel>();
-			_heightDensities = new Dictionary<int, int>();
-			for (int z = 0; z < chunkSize.y; ++z)
-			for (int x = 0; x < chunkSize.x; ++x)
-			{
-				var biome = 0; // TODO: Set the biome type.
-				var height = _heightmap[x + 1, z + 1];
-
-				var neighboringHeights = GetNeighboringHeights(x, z);
-				var minHeight = height - 1;  // One less than the coordinate of the lowest ground block at this x and z coord..
-				var maxHeight = height + 1;  // Y coordinate of the highest air block with this x and z coord..
-				foreach (var h in neighboringHeights)
-				{
-					minHeight = System.Math.Min(minHeight, h);
-					maxHeight = System.Math.Max(maxHeight, h);
-				}
-
-				if (height >= MaxHeight)
-				{
-					MaxHeight = height;
-				}
-				if (height < MinHeight)
-				{
-					MinHeight = height;
-				}
-
-				// Create the Air Blocks.
-				for (var y = maxHeight; y > height; --y)
-				{
-					var pos = new Vector3Int(x, y, z);
-					var voxel = new Voxel(pos, VoxelData.VoxelType.AIR, biome);
-
-					// Using the assumption that the map is always a heightmap, we can simplify the mesh
-					// generation process by a lot. We know that each air block has a connection in any
-					// direction if that neighboring height is equal to it's height. And only the bottom
-					// air block has a connection downwards.
-					foreach (var h in neighboringHeights)
-					{ 
-						if (y == h)
-						{
-							++voxel.NumOfExposedFaces;
-						}
-					}
-					if (y == height + 1)
-					{
-						++voxel.NumOfExposedFaces;
-					}
-
-					_voxels.Add(pos, voxel);
-				}
-
-				// Create the ground blocks.
-				for (var y = height; y > minHeight; --y)
-				{
-					if (_heightDensities.ContainsKey(y))
-					{
-						_heightDensities[y]++;
-					}
-					else
-					{
-						_heightDensities.Add(y, 1);
-					}
-
-					var pos = new Vector3Int(x, y, z);
-					var worldPos = Position + pos;
-					var voxelType = ChunkManager.Instance.BiomeLogic.GetVoxelType(worldPos, GetHeightmapValue(pos.x, pos.z));
-					var voxel = new Voxel(pos, voxelType, biome);
-
-					_voxels.Add(pos, voxel);
-				}
-			}
-		}
-
-		public IEnumerable<int> GetNeighboringHeights(int x, int z)
-		{
-			// The heightmap includes the outer layer of voxels.
-			x = x + 1;
-			z = z + 1;
-
-			if (x < _heightmap.GetLength(0))
-			{
-				yield return _heightmap[x + 1, z];
-			}
-			if (z < _heightmap.GetLength(1))
-			{
-				yield return _heightmap[x, z + 1];
-			}
-			if (x > 0)
-			{
-				yield return _heightmap[x - 1, z];
-			}
-			if (z > 0)
-			{
-				yield return _heightmap[x, z - 1];
-			}
-		}
-
-		public int GetHeightmapValue(int x, int y)
-		{
-			// The heightmap includes the outer layer of voxels.
-			x = x + 1;
-			y = y + 1;
-
-			return _heightmap[x, y];
-		}
-
 		private void OnDrawGizmosSelected()
 		{
 			if (Status != LoadStatus.FINISHED_LOADING)
@@ -337,19 +205,19 @@ namespace VoxelGame.Terrain
 		public Voxel AddVoxelStub(Vector3Int position, VoxelData.VoxelType voxelType = VoxelData.VoxelType.AIR, int biomeId = -1)
 		{
 			var voxel = new Voxel(position, voxelType, biomeId);
-			_voxels.Add(position, voxel);
+			Voxels.Add(position, voxel);
 			return voxel;
 		}
 
 		// Should only be called when the actual voxel at this position has no visible faces.
 		public void RemoveVoxel(Vector3Int position)
 		{
-			_voxels.Remove(position);
+			Voxels.Remove(position);
 		}
 
 		public Voxel GetVoxel(Vector3Int pos)
 		{
-			_voxels.TryGetValue(pos, out var voxel);
+			Voxels.TryGetValue(pos, out var voxel);
 
 			return voxel;
 		}

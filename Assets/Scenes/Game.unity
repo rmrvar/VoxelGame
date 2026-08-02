@@ -652,7 +652,7 @@ GameObject:
   - component: {fileID: 1531652811}
   - component: {fileID: 1531652810}
   m_Layer: 0
-  m_Name: ChunkLoader
+  m_Name: --- Chunk Manager ---
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -676,7 +676,9 @@ MonoBehaviour:
   _voxelDatas: []
   _playerTransform: {fileID: 1828581181}
   _playerViewDistance: 500
-  _numLoadsPerSecond: 20
+  _chunkRefreshCooldown: 1
+  _numTaskExecutors: 8
+  _numTaskExecutesPerSecond: 8
 --- !u!4 &1531652811
 Transform:
   m_ObjectHideFlags: 0
