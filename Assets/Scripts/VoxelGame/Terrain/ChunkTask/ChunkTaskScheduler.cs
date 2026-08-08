@@ -5,9 +5,9 @@ namespace VoxelGame.Terrain.ChunkTask
 {
     public class ChunkTaskScheduler
     {
-        public ChunkTaskScheduler(int maxExecutors, int maxExecutesPerSecond)
+        public ChunkTaskScheduler(int maxActiveTasks, int maxExecutesPerSecond)
         {
-            _maxExecutors = maxExecutors;
+            _maxActiveTasks = maxActiveTasks;
             _timeBetweenExecutes = 1 / (float)maxExecutesPerSecond;
             _executeCountdown = _timeBetweenExecutes;
         }
@@ -21,7 +21,7 @@ namespace VoxelGame.Terrain.ChunkTask
                 return; // Nothing to do.
             }
 
-            if (_numExecutors >= _maxExecutors)
+            if (_numActiveTasks >= _maxActiveTasks)
             {
                 return; // All executors are busy, wait for one to finish.
             }
@@ -60,29 +60,38 @@ namespace VoxelGame.Terrain.ChunkTask
                 return;
             }
 
-            ++_numExecutors;
-
-            _ = task.ExecuteAsync();
+            OnTaskStarted();
+            _ = task.ExecuteAsync(OnTaskCompleted);
 
             _executeCountdown = _timeBetweenExecutes;
         }
 
-        public void Schedule(ChunkTask task)
+        public void Schedule(ChunkTask task, float priority)
         {
-            _chunkTasks.Enqueue(task, task.Priority);
+            _chunkTasks.Enqueue(task, priority);
         }
 
-        public void OnTaskCompleted(ChunkTask task)
+        public void Interrupt(ChunkTask task)
         {
-            --_numExecutors;
+            _ = task.ExecuteAsync();
+        }
+
+        private void OnTaskStarted()
+        {
+            ++_numActiveTasks;
+        }
+
+        private void OnTaskCompleted()
+        {
+            --_numActiveTasks;
         }
 
         private readonly FastPriorityQueue<ChunkTask> _chunkTasks = new(10000);
         private readonly List<ChunkTask> _skippedTasks = new();
 
-        private readonly int _maxExecutors;
+        private readonly int _maxActiveTasks;
         private readonly float _timeBetweenExecutes;
         private float _executeCountdown;
-        private int _numExecutors;
+        private int _numActiveTasks;
     }
 }

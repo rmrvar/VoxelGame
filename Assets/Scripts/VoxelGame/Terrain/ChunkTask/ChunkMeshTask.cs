@@ -1,48 +1,91 @@
 using System;
 using System.Threading;
+using Assets.Scripts.VoxelGame.Terrain;
+using UnityEngine;
+using VoxelGame.Terrain.Meshing;
 
 namespace VoxelGame.Terrain.ChunkTask
 {
     public class ChunkMeshTask
         : ChunkTask<ChunkMeshTaskIn, ChunkMeshTaskOut>
     {
+        public int MeshVersion { get; }
+
         public ChunkMeshTask(
             Chunk chunk,
-            ChunkTaskScheduler scheduler,
-            int priority,
-            CancellationToken token
+            CancellationToken token,
+            bool shouldRunInBackground = true
           )
-            : base(chunk, scheduler, priority, token)
+            : base(chunk, token, shouldRunInBackground)
         {
+            MeshVersion = chunk.VoxelVersion;
         }
+
+        public override bool IsCancelled() => Chunk.MeshVersion >= MeshVersion || base.IsCancelled();
+
+        public override bool CanExecute() => ChunkManager.Instance.IsNeighborhoodLoaded(Chunk.Id);
 
         protected override ChunkMeshTaskIn PrepareInput()
         {
-            return new ChunkMeshTaskIn(); // TODO
+            // TODO: Check if even need to request buffer. If voxels == null => uniformVoxelType != null. Call a different mesher in that case.
+
+            ChunkMeshTaskIn input = new(ChunkManager.Instance.ChunkSize);
+
+            // TODO: Copy chunk and neighboring slices.
+
+            return input;
         }
 
 
         protected override ChunkMeshTaskOut Execute(ChunkMeshTaskIn input, CancellationToken cancellationToken)
         {
-            return new ChunkMeshTaskOut(); // TODO
+            ChunkMeshTaskOut output = new() { Buffer = input.Buffer };
+
+            GreedyMesher.Generate(input.Voxels, input.ChunkSize, input.Buffer);
+
+            return output;
         }
 
-        protected override void HandleOutput(ChunkMeshTaskOut output)
+        protected override void HandleOutput(ChunkMeshTaskOut output, Exception exception)
         {
-            // TODO
+            if (exception != null)
+            {
+                return;
+            }
+            if (Chunk.MeshVersion >= MeshVersion) // TODO: Make this a helper function.
+            {
+                return;
+            }
+
+            Mesh mesh = GreedyMesher.GetMesh(output.Buffer);
+            Chunk.ApplyMesh(mesh, MeshVersion);
+
+            // TODO: Potentially remove delta box colliders with <= MeshVersion here.
         }
     }
 
     public class ChunkMeshTaskIn : IDisposable
     {
+        public VoxelData.VoxelType[] Voxels;
+        public GreedyMesherBuffer Buffer;
+
+        public ChunkMeshTaskIn(Vector3Int chunkSize)
+        {
+            Voxels = BufferPool.Borrow<VoxelData.VoxelType[]>(
+                (chunkSize.x + 2) * (chunkSize.y + 2) * (chunkSize.z + 2)
+              );
+            Buffer = BufferPool.Borrow<GreedyMesherBuffer>();
+        }
+
         public void Dispose()
         {
-            // TODO release managed resources here
+            BufferPool.Return(Voxels);
+            BufferPool.Return(Buffer);
         }
     }
 
     public class ChunkMeshTaskOut
     {
-
+        public GreedyMesherBuffer Buffer;
     }
 }

@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using UnityEngine;
 
@@ -25,36 +24,36 @@ namespace VoxelGame.Terrain
 		public static Vector3[][] Vertices { get; } = new Vector3[6][]
 		{
 			// +X
-			new Vector3[4] { new Vector3(1,0,0), new Vector3(1,1,0), new Vector3(1,1,1), new Vector3(1,0,1) },
+			new Vector3[4] { new(1,0,0), new(1,1,0), new(1,1,1), new(1,0,1) },
 			// +Y
-			new Vector3[4] { new Vector3(0,1,0), new Vector3(0,1,1), new Vector3(1,1,1), new Vector3(1,1,0) },
+			new Vector3[4] { new(0,1,0), new(0,1,1), new(1,1,1), new(1,1,0) },
 			// +Z
-			new Vector3[4] { new Vector3(0,0,1), new Vector3(1,0,1), new Vector3(1,1,1), new Vector3(0,1,1) },
+			new Vector3[4] { new(0,0,1), new(1,0,1), new(1,1,1), new(0,1,1) },
 			// -X
-			new Vector3[4] { new Vector3(0,0,0), new Vector3(0,0,1), new Vector3(0,1,1), new Vector3(0,1,0) },
+			new Vector3[4] { new(0,0,0), new(0,0,1), new(0,1,1), new(0,1,0) },
 			// -Y
-			new Vector3[4] { new Vector3(0,0,0), new Vector3(1,0,0), new Vector3(1,0,1), new Vector3(0,0,1) },
+			new Vector3[4] { new(0,0,0), new(1,0,0), new(1,0,1), new(0,0,1) },
 			// -Z
-			new Vector3[4] { new Vector3(0,0,0), new Vector3(0,1,0), new Vector3(1,1,0), new Vector3(1,0,0) },
+			new Vector3[4] { new(0,0,0), new(0,1,0), new(1,1,0), new(1,0,0) },
 		};
 
 		public static Vector3[][] UVs3 { get; } = new Vector3[6][]
 		{
 			// +X
-			new Vector3[4] { new Vector3(0, 0), new Vector3(0, 1), new Vector3(1, 1), new Vector3(1, 0), },
+			new Vector3[4] { new(0, 0), new(0, 1), new(1, 1), new(1, 0), },
 			// +Y
-			new Vector3[4] { new Vector3(0, 1), new Vector3(0, 0), new Vector3(1, 0), new Vector3(1, 1), },
+			new Vector3[4] { new(0, 1), new(0, 0), new(1, 0), new(1, 1), },
 			// +Z
-			new Vector3[4] { new Vector3(1, 0), new Vector3(0, 0), new Vector3(0, 1), new Vector3(1, 1), },
+			new Vector3[4] { new(1, 0), new(0, 0), new(0, 1), new(1, 1), },
 			// -X
-			new Vector3[4] { new Vector3(1, 0), new Vector3(0, 0), new Vector3(0, 1), new Vector3(1, 1), },
+			new Vector3[4] { new(1, 0), new(0, 0), new(0, 1), new(1, 1), },
 			// -Y
-			new Vector3[4] { new Vector3(0, 0), new Vector3(1, 0), new Vector3(1, 1), new Vector3(0, 1), },
+			new Vector3[4] { new(0, 0), new(1, 0), new(1, 1), new(0, 1), },
 			// -Z
-			new Vector3[4] { new Vector3(0, 0), new Vector3(0, 1), new Vector3(1, 1), new Vector3(1, 0), },
+			new Vector3[4] { new(0, 0), new(0, 1), new(1, 1), new(1, 0), },
 		};
 
-		private static int[] TextureFaceOffsets { get; } = new int[6]
+		public static int[] TextureFaceOffsets { get; } = new int[6]
 		{
 			0,
 			1,
@@ -73,20 +72,20 @@ namespace VoxelGame.Terrain
 		public static Vector3[][] Normals { get; } = new Vector3[6][]
 		{
 			// +X
-			new Vector3[4] { new Vector3(+1,  0,  0), new Vector3(+1,  0,  0), new Vector3(+1,  0,  0), new Vector3(+1,  0,  0), },
+			new Vector3[4] { new(+1,  0,  0), new(+1,  0,  0), new(+1,  0,  0), new(+1,  0,  0), },
 			// +Y
-			new Vector3[4] { new Vector3( 0, +1,  0), new Vector3( 0, +1,  0), new Vector3( 0, +1,  0), new Vector3( 0, +1,  0), },
+			new Vector3[4] { new( 0, +1,  0), new( 0, +1,  0), new( 0, +1,  0), new( 0, +1,  0), },
 			// +Z
-			new Vector3[4] { new Vector3( 0,  0, +1), new Vector3( 0,  0, +1), new Vector3( 0,  0, +1), new Vector3( 0,  0, +1), },
+			new Vector3[4] { new( 0,  0, +1), new( 0,  0, +1), new( 0,  0, +1), new( 0,  0, +1), },
 			// -X
-			new Vector3[4] { new Vector3(-1,  0,  0), new Vector3(-1,  0,  0), new Vector3(-1,  0,  0), new Vector3(-1,  0,  0), },
+			new Vector3[4] { new(-1,  0,  0), new(-1,  0,  0), new(-1,  0,  0), new(-1,  0,  0), },
 			// -Y
-			new Vector3[4] { new Vector3( 0, -1,  0), new Vector3( 0, -1,  0), new Vector3( 0, -1,  0), new Vector3( 0, -1,  0), },
+			new Vector3[4] { new( 0, -1,  0), new( 0, -1,  0), new( 0, -1,  0), new( 0, -1,  0), },
 			// -Z
-			new Vector3[4] { new Vector3( 0,  0, -1), new Vector3( 0,  0, -1), new Vector3( 0,  0, -1), new Vector3( 0,  0, -1), },
+			new Vector3[4] { new( 0,  0, -1), new( 0,  0, -1), new( 0,  0, -1), new( 0,  0, -1), },
 		};
 
-		public enum VoxelType
+		public enum VoxelType : byte
 		{ 
 			AIR = 0,
 			DIRT,

@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
+using Assets.Scripts.VoxelGame.Terrain;
 using UnityEngine;
 
 namespace VoxelGame.Terrain.ChunkTask
@@ -10,188 +10,140 @@ namespace VoxelGame.Terrain.ChunkTask
     {
         public ChunkLoadTask(
             Chunk chunk, 
-            ChunkTaskScheduler scheduler, 
-            int priority, 
             CancellationToken token
           ) 
-            : base(chunk, scheduler, priority, token)
+            : base(chunk, token, shouldRunInBackground: true)
         {
         }
 
         protected override ChunkLoadTaskIn PrepareInput()
         {
-            return new ChunkLoadTaskIn(); // TODO
+            return new ChunkLoadTaskIn(Chunk.Position, ChunkManager.Instance.ChunkSize);
         }
 
         protected override ChunkLoadTaskOut Execute(ChunkLoadTaskIn input, CancellationToken cancellationToken)
         {
-            _in = input;
-            _out = new ChunkLoadTaskOut();
+            Vector3Int chunkPosition = input.Position;
+            Vector3Int chunkSize = input.Size;
 
-            if (ShouldLoad())
+            for (int z = 0; z < chunkSize.z; ++z)
+            for (int x = 0; x < chunkSize.x; ++x)
             {
-                LoadVoxels(); // TODO: Consider moving into its own task (ShouldLoad is known when scheduling already).
+                int heightIndex = x + z * chunkSize.x;
+                int height = BiomeLogic.GetHeight(
+                    chunkPosition.x + x, 
+                    chunkPosition.z + z
+                  );
+                input.Heights[heightIndex] = height;
+            }
+
+            bool isUniform = true;
+            VoxelData.VoxelType? uniformVoxelType = null;
+
+            int strideY = chunkSize.x;
+            int strideZ = chunkSize.x * chunkSize.z;
+
+            for (int z = 0; z < chunkSize.z; ++z)
+            for (int y = 0; y < chunkSize.y; ++y)
+            {
+                int heightIndex0 = z * chunkSize.x;
+
+                for (int x = 0; x < chunkSize.x; ++x)
+                {
+                    int heightIndex = heightIndex0 + x;
+                    int height = input.Heights[heightIndex];
+
+                    Vector3Int position = chunkPosition + new Vector3Int(x, y, z);
+                    int voxelTypeIndex = x + y * strideY + z * strideZ;
+                    VoxelData.VoxelType voxelType = BiomeLogic.GetVoxelType(position, y - height);
+
+                    input.Voxels[voxelTypeIndex] = voxelType;
+
+                    if (isUniform)
+                    {
+                        if (uniformVoxelType == null)
+                        {
+                            uniformVoxelType = voxelType;
+                        } else 
+                        if (uniformVoxelType != voxelType)
+                        {
+                            isUniform = false;
+                        }
+                    }
+                }
+            }
+
+            ChunkLoadTaskOut output = new()
+            {
+                Input = input,
+                IsUniform = isUniform,
+                UniformVoxelType = uniformVoxelType.GetValueOrDefault(),
+            };
+            return output;
+        }
+
+        protected override void HandleOutput(ChunkLoadTaskOut output, Exception exception)
+        {
+            if (exception != null)
+            {
+                return; // Something went wrong.
+            }
+
+            if (!output.IsUniform)
+            {
+                Chunk.SetVoxels(output.Input.Voxels);
+                output.Input.DetachBuffers();
             }
             else
             {
-                GenerateBiomesmap();
-                Token.ThrowIfCancellationRequested();
-                GenerateHeightmap();
-                Token.ThrowIfCancellationRequested();
-                GenerateVoxels();
+                Chunk.SetUniform(output.UniformVoxelType);
             }
 
-            return _out;
+            float diagonalSqDist = 
+                output.Input.Size.x * output.Input.Size.x + output.Input.Size.y * output.Input.Size.y + output.Input.Size.z * output.Input.Size.z;
+
+            ChunkManager.Instance.Scheduler.Schedule(
+                new ChunkMeshTask(Chunk, Chunk.GetCancellationToken()),
+                Priority + diagonalSqDist
+              );
         }
-
-        protected override void HandleOutput(ChunkLoadTaskOut output)
-        {
-            Chunk.Status = Chunk.LoadStatus.FINISHED_LOADING;
-            Chunk.Voxels = output.Voxels;
-        }
-
-        private bool ShouldLoad()
-        {
-            return false; // TODO
-        }
-
-        private void LoadVoxels()
-        {
-            // TODO
-        }
-
-        private void GenerateBiomesmap()
-        {
-        }
-
-        private void GenerateHeightmap()
-        {
-            for (int z = 0; z < _in.ChunkSize.y; ++z)
-            for (int x = 0; x < _in.ChunkSize.x; ++x)
-            {
-                Token.ThrowIfCancellationRequested();
-                Vector3 position = _in.Position + new Vector3(x, 0, z);
-                _in.Heightmap[x, z] = BiomeLogic.GetHeight(position);
-            }
-        }
-
-        private void GenerateVoxels()
-        {
-            var voxels = new Dictionary<Vector3Int, Voxel>();
-            
-            for (int z = 0; z < _in.ChunkSize.y; ++z)
-            for (int x = 0; x < _in.ChunkSize.x; ++x)
-            {
-                Token.ThrowIfCancellationRequested();
-
-                var biome = 0; // TODO: Set the biome type.
-                var height = _in.Heightmap[x + 1, z + 1];
-
-                var neighboringHeights = GetNeighboringHeights(x, z);
-                var minHeight = height - 1; // One less than the coordinate of the lowest ground block at this x and z coord..
-                var maxHeight = height + 1; // Y coordinate of the highest air block with this x and z coord..
-                foreach (var h in neighboringHeights)
-                {
-                    minHeight = Math.Min(minHeight, h);
-                    maxHeight = Math.Max(maxHeight, h);
-                }
-
-                if (height >= _maxHeight)
-                {
-                    _maxHeight = height;
-                }
-                if (height < _minHeight)
-                {
-                    _minHeight = height;
-                }
-
-                // Create the Air Blocks.
-                for (var y = maxHeight; y > height; --y)
-                {
-                    var pos = new Vector3Int(x, y, z);
-                    var voxel = new Voxel(pos, VoxelData.VoxelType.AIR, biome);
-
-                    // Using the assumption that the map is always a heightmap, we can simplify the mesh
-                    // generation process by a lot. We know that each air block has a connection in any
-                    // direction if that neighboring height is equal to its height. And only the bottom
-                    // air block has a connection downwards.
-                    foreach (var h in neighboringHeights)
-                    {
-                        if (y == h)
-                        {
-                            ++voxel.NumOfExposedFaces;
-                        }
-                    }
-                    if (y == height + 1)
-                    {
-                        ++voxel.NumOfExposedFaces;
-                    }
-
-                    voxels.Add(pos, voxel);
-                }
-
-                // Create the ground blocks.
-                for (var y = height; y > minHeight; --y)
-                {
-                    var pos = new Vector3Int(x, y, z);
-                    var worldPos = _in.Position + pos;
-                    var voxelType = BiomeLogic.GetVoxelType(worldPos, _in.Heightmap[pos.x, pos.z]);
-                    var voxel = new Voxel(pos, voxelType, biome);
-
-                    voxels.Add(pos, voxel);
-                }
-            }
-
-            _out.Voxels = voxels;
-        }
-
-        public IEnumerable<int> GetNeighboringHeights(int x, int z)
-        {
-            int[,] heightmap = _in.Heightmap;
-            if (x < heightmap.GetLength(0))
-            {
-                yield return heightmap[x + 1, z];
-            }
-            if (z < heightmap.GetLength(1))
-            {
-                yield return heightmap[x, z + 1];
-            }
-            if (x > 0)
-            {
-                yield return heightmap[x - 1, z];
-            }
-            if (z > 0)
-            {
-                yield return heightmap[x, z - 1];
-            }
-        }
-
-        private ChunkLoadTaskIn _in;
-        private ChunkLoadTaskOut _out;
-        private int _minHeight;
-        private int _maxHeight;
     }
 
     public class ChunkLoadTaskIn : IDisposable
     {
-        public Vector2Int ChunkSize;
+        public int[] Heights;
+        public VoxelData.VoxelType[] Voxels;
+        public Vector3Int Size;
         public Vector3Int Position;
 
-        public readonly int[,] Heightmap;
-
-        public ChunkLoadTaskIn()
+        public ChunkLoadTaskIn(Vector3Int position, Vector3Int size)
         {
-            Heightmap = new int[ChunkSize.x, ChunkSize.y]; // TODO: Get from pool.
+            Position = position;
+            Size = size;
+            Voxels = BufferPool.Borrow<VoxelData.VoxelType[]>(size.x * size.y * size.z);
+            Heights = BufferPool.Borrow<int[]>(size.x * size.z);
+        }
+
+        public void DetachBuffers()
+        {
+            Voxels = null;
         }
 
         public void Dispose()
         {
-            // TODO release managed resources here
+            if (Voxels != null)
+            {
+                BufferPool.Return(Voxels);
+                Voxels = null;
+            }
+            BufferPool.Return(Heights);
         }
     }
 
     public class ChunkLoadTaskOut
     {
-        public Dictionary<Vector3Int, Voxel> Voxels;
+        public ChunkLoadTaskIn Input;
+        public bool IsUniform;
+        public VoxelData.VoxelType UniformVoxelType;
     }
 }

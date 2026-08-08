@@ -14,7 +14,7 @@ namespace VoxelGame.Terrain
         private Chunk _chunkPrefab = null;
 
         [field: SerializeField] 
-        public Vector2Int ChunkSize { get; private set; } = new(32, 32);
+        public Vector3Int ChunkSize { get; private set; } = new(32, 32, 32);
 
 		[SerializeField] 
         private Transform _generationOrigin = null;
@@ -24,11 +24,14 @@ namespace VoxelGame.Terrain
         [SerializeField]
         private float _chunkRefreshCooldown = 1;
         [SerializeField]
-        private int _numTaskExecutors = 8;
+        private int _maxActiveTasks = 8;
         [SerializeField]
-        private int _numTaskExecutesPerSecond = 8;
+        private int _maxTaskExecutesPerSecond = 8;
 
 		public static ChunkManager Instance { get; private set; }
+
+		public ChunkTaskScheduler Scheduler { get; private set; }
+
 
 		private void Awake()
 		{
@@ -45,7 +48,7 @@ namespace VoxelGame.Terrain
 
             Random.InitState(_seed);
             _chunks = new Dictionary<Vector2Int, Chunk>();
-            _chunkTaskScheduler = new ChunkTaskScheduler(_numTaskExecutors, _numTaskExecutesPerSecond);
+            Scheduler = new ChunkTaskScheduler(_maxActiveTasks, _maxTaskExecutesPerSecond);
 		}
 
 
@@ -104,17 +107,14 @@ namespace VoxelGame.Terrain
                     _chunks.Add(chunkId, chunk);
 
 					var sqrDistance = (chunkPos - _generationOrigin.position).sqrMagnitude;
-                    int priority = (int) sqrDistance;
 
-					// Schedule the chunk's tasks.
-                    _chunkTaskScheduler.Schedule(new ChunkLoadTask(chunk, _chunkTaskScheduler, priority, CancellationToken.None));
-                    _chunkTaskScheduler.Schedule(new ChunkMeshTask(chunk, _chunkTaskScheduler, priority, CancellationToken.None));
+                    // Schedule the chunk's tasks.
+                    Scheduler.Schedule(new ChunkLoadTask(chunk, chunk.GetCancellationToken()), priority: sqrDistance);
 				}
-			}
+            }
 		}
 
         private Dictionary<Vector2Int, Chunk> _chunks;
-        private ChunkTaskScheduler _chunkTaskScheduler;
 		private float _chunkRefreshTimer;
     }
 }

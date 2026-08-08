@@ -79,6 +79,10 @@ namespace VoxelGame.Terrain
 			var transformedPos = Vector3.Scale(voxelWorldPosition + _offset2, new Vector3(+0.0316F, -0.0356F));
 			var dirtyDepth = Mathf.FloorToInt(Mathf.PerlinNoise(transformedPos.x, transformedPos.z) * 5) + 1;
 
+            if (heightAtThisPosition > voxelWorldPosition.y)
+            {
+                return VoxelData.VoxelType.AIR;
+            } else
 			if (heightAtThisPosition == voxelWorldPosition.y)
 			{
 				return VoxelData.VoxelType.GRASS;
@@ -92,6 +96,11 @@ namespace VoxelGame.Terrain
 				return VoxelData.VoxelType.STONE;
 			}
 		}
+
+        public static int GetHeight(int x, int z)
+        {
+            return 0;
+        }
 
 		public static int GetHeight(Vector3 voxelWorldPosition)
 		{

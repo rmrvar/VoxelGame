@@ -9,27 +9,24 @@ namespace VoxelGame.Terrain.ChunkTask
         : FastPriorityQueueNode
     {
         public Chunk Chunk { get; }
-        public ChunkTaskScheduler Scheduler { get; set; }
-        public int Priority { get; private set; }
         public CancellationToken Token { get; }
+        public bool ShouldRunInBackground { get; }
 
-        public ChunkTask(
+        protected ChunkTask(
             Chunk chunk,
-            ChunkTaskScheduler scheduler,
-            int priority,
-            CancellationToken token
+            CancellationToken token,
+            bool shouldRunInBackground = true
           )
         {
             Chunk = chunk;
-            Scheduler = scheduler;
-            Priority = priority;
             Token = token;
+            ShouldRunInBackground = shouldRunInBackground;
         }
 
-        public bool IsCancelled() => Token.IsCancellationRequested;
+        public virtual bool IsCancelled() => Token.IsCancellationRequested;
         public virtual bool CanExecute() => true;
 
-        public async Task ExecuteAsync()
+        public async Task ExecuteAsync(Action onCompleted = null)
         {
             try
             {
@@ -41,13 +38,21 @@ namespace VoxelGame.Terrain.ChunkTask
             }
             finally
             {
-                Scheduler.OnTaskCompleted(this);
+                onCompleted?.Invoke();
             }
         }
 
-        protected virtual async Task RunTaskAsync()
+        protected virtual Task RunTaskAsync()
         {
-            await Task.Run(() => Execute(Token), Token);
+            if (ShouldRunInBackground)
+            {
+                return Task.Run(() => Execute(Token), Token);
+            }
+            else
+            {
+                Execute(Token);
+                return Task.CompletedTask;
+            }
         }
 
         protected abstract void Execute(CancellationToken cancellationToken);
@@ -57,13 +62,12 @@ namespace VoxelGame.Terrain.ChunkTask
         : ChunkTask
         where TIn : IDisposable
     {
-        public ChunkTask(
+        protected ChunkTask(
             Chunk chunk,
-            ChunkTaskScheduler scheduler,
-            int priority,
-            CancellationToken token
+            CancellationToken token,
+            bool shouldRunInBackground = true
           )
-            : base(chunk, scheduler, priority, token)
+            : base(chunk, token, shouldRunInBackground)
         {
         }
 
@@ -71,11 +75,27 @@ namespace VoxelGame.Terrain.ChunkTask
         {
             using TIn input = PrepareInput();
 
-            TOut output = await Task.Run(() => Execute(input, Token), Token);
-
-            if (!Token.IsCancellationRequested)
+            TOut output = default;
+            Exception exception = null;
+            try
             {
-                HandleOutput(output);
+                if (ShouldRunInBackground)
+                {
+                    output = await Task.Run(() => Execute(input, Token), Token);
+                }
+                else
+                {
+                    output = Execute(input, Token);
+                }
+            }
+            catch (Exception e)
+            {
+                exception = e;
+                throw;
+            }
+            finally
+            {
+                HandleOutput(output, exception);
             }
         }
 
@@ -85,7 +105,7 @@ namespace VoxelGame.Terrain.ChunkTask
         }
 
         protected abstract TIn PrepareInput();
-        protected abstract void HandleOutput(TOut output);
+        protected abstract void HandleOutput(TOut output, Exception exception);
         protected abstract TOut Execute(TIn input, CancellationToken cancellationToken);
     }
 }

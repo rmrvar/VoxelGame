@@ -36,43 +36,43 @@ namespace VoxelGame
 
 		private void InteractWithBlock(bool placeOrPickup)
 		{
-			var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-			var layerMask = 1 << LayerMask.NameToLayer("Chunk");  // We only want to intersect the Chunk.
+			//var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+			//var layerMask = 1 << LayerMask.NameToLayer("Chunk");  // We only want to intersect the Chunk.
 
-			Debug.DrawLine(_lookRoot.position, _lookRoot.position + ray.direction.normalized * 7f, Color.blue, 1f);
+			//Debug.DrawLine(_lookRoot.position, _lookRoot.position + ray.direction.normalized * 7f, Color.blue, 1f);
 
-			if (Physics.Raycast(ray, out var hitInfo, 7, layerMask))
-			{
-				Debug.Log("HIT CHUNK!");
+			//if (Physics.Raycast(ray, out var hitInfo, 7, layerMask))
+			//{
+			//	Debug.Log("HIT CHUNK!");
 
-				var posToAffect = Vector3Int.FloorToInt(hitInfo.point + (placeOrPickup ? +1 : -1) * hitInfo.normal.normalized / 2f);
-				var chunkToAffect = ChunkManager.Instance.GetChunk(posToAffect);  // Must get the chunk before converting to local position.
-				var voxelToAffect = chunkToAffect.GetVoxel(posToAffect.WorldToChunkLocal(chunkToAffect));
+			//	var posToAffect = Vector3Int.FloorToInt(hitInfo.point + (placeOrPickup ? +1 : -1) * hitInfo.normal.normalized / 2f);
+			//	var chunkToAffect = ChunkManager.Instance.GetChunk(posToAffect);  // Must get the chunk before converting to local position.
+			//	var voxelToAffect = chunkToAffect.GetVoxel(posToAffect.WorldToChunkLocal(chunkToAffect));
 
-				Debug.Log($"Hit block: {chunkToAffect.Position + voxelToAffect.Position}");
-				if (_coroutine != null)
-				{
-					StopCoroutine(_coroutine);
-				}
-				_coroutine = StartCoroutine(DrawCube(chunkToAffect.Position + voxelToAffect.Position + Vector3.one * 0.5F));
+			//	Debug.Log($"Hit block: {chunkToAffect.Position + voxelToAffect.Position}");
+			//	if (_coroutine != null)
+			//	{
+			//		StopCoroutine(_coroutine);
+			//	}
+			//	_coroutine = StartCoroutine(DrawCube(chunkToAffect.Position + voxelToAffect.Position + Vector3.one * 0.5F));
 
 
-				if (placeOrPickup)
-				{
-					voxelToAffect.VoxelType = VoxelData.VoxelType.STONE;  // TODO: Support different types of blocks.
-				}
-				else
-				{
-					voxelToAffect.VoxelType = VoxelData.VoxelType.AIR;
-				}
+			//	if (placeOrPickup)
+			//	{
+			//		voxelToAffect.VoxelType = VoxelData.VoxelType.STONE;  // TODO: Support different types of blocks.
+			//	}
+			//	else
+			//	{
+			//		voxelToAffect.VoxelType = VoxelData.VoxelType.AIR;
+			//	}
 
-				ChunkEditor.CreateOrDestroyBlock(chunkToAffect, voxelToAffect, posToAffect, requestRedraws: true, requestCollisions: true);
+			//	ChunkEditor.CreateOrDestroyBlock(chunkToAffect, voxelToAffect, posToAffect, requestRedraws: true, requestCollisions: true);
 
-				if (placeOrPickup)
-				{ 
-					//PushOutAllItemDropsInBlock(chunkToAffect, posToAffect);  // How to push items out of big areas like furniture? My suggestion is to take that furnitures bounds as the rectangular prism.
-				}
-			}
+			//	if (placeOrPickup)
+			//	{ 
+			//		//PushOutAllItemDropsInBlock(chunkToAffect, posToAffect);  // How to push items out of big areas like furniture? My suggestion is to take that furnitures bounds as the rectangular prism.
+			//	}
+			//}
 		}
 
 		//private void PushOutAllItemDropsInBlock(Chunk chunk, Vector3Int localPositionToPlace)
