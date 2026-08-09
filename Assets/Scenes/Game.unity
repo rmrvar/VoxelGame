@@ -670,15 +670,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0c356fb447aed0459faa47db9afcdb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _worldSeed: 0
+  _seed: 0
   _chunkPrefab: {fileID: 6746295407634173444, guid: 5d78c3d49de314747921acdf12eb90d4, type: 3}
-  _chunkSize: {x: 30, y: 30}
-  _voxelDatas: []
-  _playerTransform: {fileID: 1828581181}
-  _playerViewDistance: 500
+  <ChunkSize>k__BackingField: {x: 32, y: 32, z: 32}
+  _generationOrigin: {fileID: 1828581181}
+  _generationRadius: 1
   _chunkRefreshCooldown: 1
-  _numTaskExecutors: 8
-  _numTaskExecutesPerSecond: 8
+  _maxActiveTasks: 8
+  _maxTaskExecutesPerSecond: 8
 --- !u!4 &1531652811
 Transform:
   m_ObjectHideFlags: 0

@@ -14,7 +14,19 @@ namespace VoxelGame.Terrain
 
         public int MeshVersion { get; private set; } = -1;
 
-        public int VoxelVersion { get; private set; }
+        public int VoxelVersion { get; private set; } = -1;
+
+        public Vector3Int Position { get; private set; }
+        
+        public Vector3Int Id { get; private set; }
+
+        public bool IsLoaded => VoxelVersion > 0;
+
+        public void Init(Vector3Int id, Vector3Int position)
+        {
+            Id = id;
+            Position = position;
+        }
 
         public CancellationToken GetCancellationToken()
         {
@@ -33,15 +45,25 @@ namespace VoxelGame.Terrain
             return false;
         }
 
+        public VoxelData.VoxelType GetVoxel(int x, int y, int z)
+        {
+            Vector3Int chunkSize = ChunkManager.Instance.ChunkSize;
+            int yStride = chunkSize.x;
+            int zStride = chunkSize.x * chunkSize.y;
+            return _voxels[x + y * yStride + z * zStride];
+        }
+
         public void SetVoxels(VoxelData.VoxelType[] voxels)
         {
             _voxels = voxels;
+            VoxelVersion = 0;
         }
 
         public void SetUniform(VoxelData.VoxelType uniformVoxelType)
         {
             _voxels = null;
             _uniformVoxelType = uniformVoxelType;
+            VoxelVersion = 0;
         }
 
         public void ApplyMesh(Mesh mesh, int meshVersion)

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
 
@@ -16,7 +17,17 @@ namespace VoxelGame.Terrain.Meshing
         public readonly List<Vector3> Normals;
         public readonly List<int> Quads;
 
-        public GreedyMesherBuffer()
+        public static GreedyMesherBuffer Borrow()
+        {
+            return _pool.Get();
+        }
+
+        public static void Return(GreedyMesherBuffer buffer)
+        {
+            _pool.Release(buffer);
+        }
+
+        private GreedyMesherBuffer()
         {
             Vector3Int chunkSize = ChunkManager.Instance.ChunkSize;
 
@@ -34,7 +45,7 @@ namespace VoxelGame.Terrain.Meshing
             Quads = new List<int>(initialListSize);
         }
 
-        public void Clear()
+        private void Clear()
         {
             // Arrays don't need to be cleared (implementation detail of greedy mesher buffers).
             Vertices.Clear();
@@ -42,5 +53,11 @@ namespace VoxelGame.Terrain.Meshing
             Normals.Clear();
             Quads.Clear();
         }
+
+        private static readonly ObjectPool<GreedyMesherBuffer> _pool =
+            new(
+                () => new GreedyMesherBuffer(),
+                buffer => buffer.Clear()
+              );
     }
 }

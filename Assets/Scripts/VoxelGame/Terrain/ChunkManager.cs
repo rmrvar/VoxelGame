@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Threading;
 using UnityEngine;
 using VoxelGame.Terrain.ChunkTask;
 
@@ -47,14 +46,14 @@ namespace VoxelGame.Terrain
 			Instance = this;
 
             Random.InitState(_seed);
-            _chunks = new Dictionary<Vector2Int, Chunk>();
+            _chunks = new Dictionary<Vector3Int, Chunk>();
             Scheduler = new ChunkTaskScheduler(_maxActiveTasks, _maxTaskExecutesPerSecond);
 		}
 
 
 		private void Update()
 		{
-            _chunkTaskScheduler.Update(Time.deltaTime);
+            Scheduler.Update(Time.deltaTime);
 
 			_chunkRefreshTimer -= Time.deltaTime;
 			if (_chunkRefreshTimer <= 0)
@@ -65,19 +64,23 @@ namespace VoxelGame.Terrain
 			}
         }
 
-		public Vector2Int GetChunkID(Vector3 pos)
+		public Vector3Int GetChunkId(Vector3 pos)
 		{
-			pos.Scale(new Vector3(1.0F / ChunkSize.x, 0, 1.0F / ChunkSize.y));
-			return new Vector2Int(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.z));
+			pos.Scale(new Vector3(1.0F / ChunkSize.x, 1.0F / ChunkSize.y, 1.0F / ChunkSize.z));
+			return new Vector3Int(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z));
 		}
 
-		// Get the Chunk containing this position.
-		public Chunk GetChunk(Vector3 pos)
+		public Chunk GetChunkByPos(Vector3 pos)
 		{
-			_chunks.TryGetValue(GetChunkID(pos), out var chunk);
-
+			_chunks.TryGetValue(GetChunkId(pos), out Chunk chunk);
 			return chunk;
 		}
+
+        public Chunk GetChunkById(Vector3Int id)
+        {
+            _chunks.TryGetValue(id, out Chunk chunk);
+            return chunk;
+        }
 
 		private void ShowChunksWithinView()
 		{
@@ -87,10 +90,14 @@ namespace VoxelGame.Terrain
 
 			// Get the Chunks enveloping the player.
 			for (int z = -ratio; z < +ratio; ++z)
+            for (int y = -ratio; y < +ratio; ++y)
 			for (int x = -ratio; x < +ratio; ++x)
-			{
-				var chunkId = GetChunkID(new Vector3(x * ChunkSize.x, 0, z * ChunkSize.y) + _generationOrigin.position);
-				var chunkPos = new Vector3Int(chunkId.x * ChunkSize.x, 0, chunkId.y * ChunkSize.y);
+            {
+                Vector3 offset = new(x * ChunkSize.x, y * ChunkSize.y, z * ChunkSize.z);
+                Vector3 position = _generationOrigin.position + offset;
+
+				var chunkId = GetChunkId(position);
+				var chunkPos = new Vector3Int(chunkId.x * ChunkSize.x, chunkId.y * ChunkSize.y, chunkId.z * ChunkSize.z);
 
 				if (_chunks.TryGetValue(chunkId, out var chunk))
 				{
@@ -114,7 +121,7 @@ namespace VoxelGame.Terrain
             }
 		}
 
-        private Dictionary<Vector2Int, Chunk> _chunks;
+        private Dictionary<Vector3Int, Chunk> _chunks;
 		private float _chunkRefreshTimer;
     }
 }

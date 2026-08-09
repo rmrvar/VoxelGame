@@ -1,6 +1,6 @@
 using System;
+using System.Buffers;
 using System.Threading;
-using Assets.Scripts.VoxelGame.Terrain;
 using UnityEngine;
 
 namespace VoxelGame.Terrain.ChunkTask
@@ -120,8 +120,8 @@ namespace VoxelGame.Terrain.ChunkTask
         {
             Position = position;
             Size = size;
-            Voxels = BufferPool.Borrow<VoxelData.VoxelType[]>(size.x * size.y * size.z);
-            Heights = BufferPool.Borrow<int[]>(size.x * size.z);
+            Voxels = ArrayPool<VoxelData.VoxelType>.Shared.Rent(size.x * size.y * size.z);
+            Heights = ArrayPool<int>.Shared.Rent(size.x * size.z);
         }
 
         public void DetachBuffers()
@@ -133,10 +133,10 @@ namespace VoxelGame.Terrain.ChunkTask
         {
             if (Voxels != null)
             {
-                BufferPool.Return(Voxels);
+                ArrayPool<VoxelData.VoxelType>.Shared.Return(Voxels);
                 Voxels = null;
             }
-            BufferPool.Return(Heights);
+            ArrayPool<int>.Shared.Return(Heights);
         }
     }
 
