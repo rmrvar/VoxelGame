@@ -20,7 +20,7 @@ namespace VoxelGame.Terrain
         
         public Vector3Int Id { get; private set; }
 
-        public bool IsLoaded => VoxelVersion > 0;
+        public bool IsLoaded => VoxelVersion >= 0;
 
         public void Init(Vector3Int id, Vector3Int position)
         {
@@ -47,6 +47,10 @@ namespace VoxelGame.Terrain
 
         public VoxelData.VoxelType GetVoxel(int x, int y, int z)
         {
+            if (_voxels == null)
+            {
+                return _uniformVoxelType;
+            }
             Vector3Int chunkSize = ChunkManager.Instance.ChunkSize;
             int yStride = chunkSize.x;
             int zStride = chunkSize.x * chunkSize.y;

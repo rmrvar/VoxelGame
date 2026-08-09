@@ -3,6 +3,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Priority_Queue;
+using UnityEngine;
 
 namespace VoxelGame.Terrain.ChunkTask
 {
@@ -40,6 +41,11 @@ namespace VoxelGame.Terrain.ChunkTask
             catch (OperationCanceledException)
             {
                 // Don't crash the game if the task was cancelled, just ignore it.
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                throw;
             }
             finally
             {

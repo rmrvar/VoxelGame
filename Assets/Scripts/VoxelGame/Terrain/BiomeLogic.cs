@@ -99,7 +99,7 @@ namespace VoxelGame.Terrain
 
         public static int GetHeight(int x, int z)
         {
-            return 0;
+            return GetHeight(new Vector3(x, 0, z));
         }
 
 		public static int GetHeight(Vector3 voxelWorldPosition)

@@ -27,11 +27,35 @@ namespace VoxelGame.Terrain.Meshing
 
             Vector3Int sliceSize = ToSliceSpace(size, dimension);
             Vector3Int slicePSize = new(2 + sliceSize.x, 2 + sliceSize.y, 2 + sliceSize.z);
-            
-			// TODO: Calculate for the three directions.
-            int xStride = 1;
-            int yStride = 1;
-            int dStride = 1;
+
+            int xStride;
+            int yStride;
+            int dStride;
+
+            switch (dimension)
+            {
+                case 0: // X axis slice: (Y, Z, X)
+                {
+                    xStride = size.y;
+                    yStride = size.x * size.y;
+                    dStride = 1;
+                    break;
+                }
+                case 1: // Y axis slice: (X, Z, Y)
+                {
+                    xStride = 1;
+                    yStride = size.x * size.y;
+                    dStride = size.x;
+                    break;
+                }
+                default: // Z axis slice: (X, Y, Z)
+                {
+                    xStride = 1;
+                    yStride = size.x;
+                    dStride = size.x * size.y;
+                    break;
+                }
+            }
 
             VoxelType[] types = buffer.Types;
             int[] topQuadIndices = buffer.TopQuadIndices;
@@ -43,7 +67,7 @@ namespace VoxelGame.Terrain.Meshing
 				for (int y = 1; y < slicePSize.y - 1; ++y)
                 for (int x = 1; x < slicePSize.x - 1; ++x)
                 {
-                    int i1 = x + y * yStride + d * dStride;
+                    int i1 = x * xStride + y * yStride + d * dStride;
 
                     int xm1 = x - 1;
                     int ym1 = y - 1;
@@ -94,7 +118,7 @@ namespace VoxelGame.Terrain.Meshing
                         ++quad.MaxX;
                     }
 
-                    if (x < sliceSize.x - 1 || types[i + 1] == type)
+                    if (x < sliceSize.x - 1 && types[i + 1] == type)
                     {
 						// Quad keeps going.
                         topQuadIndices[x] = -1;

@@ -674,7 +674,7 @@ MonoBehaviour:
   _chunkPrefab: {fileID: 6746295407634173444, guid: 5d78c3d49de314747921acdf12eb90d4, type: 3}
   <ChunkSize>k__BackingField: {x: 32, y: 32, z: 32}
   _generationOrigin: {fileID: 1828581181}
-  _generationRadius: 1
+  _generationRadius: 35
   _chunkRefreshCooldown: 1
   _maxActiveTasks: 8
   _maxTaskExecutesPerSecond: 8
