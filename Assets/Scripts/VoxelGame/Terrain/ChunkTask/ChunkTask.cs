@@ -1,3 +1,4 @@
+#define DISABLE_BACKGROUND_EXECUTION
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,6 +22,10 @@ namespace VoxelGame.Terrain.ChunkTask
             Chunk = chunk;
             Token = token;
             ShouldRunInBackground = shouldRunInBackground;
+
+#if DISABLE_BACKGROUND_EXECUTION
+            ShouldRunInBackground = false;
+#endif
         }
 
         public virtual bool IsCancelled() => Token.IsCancellationRequested;
