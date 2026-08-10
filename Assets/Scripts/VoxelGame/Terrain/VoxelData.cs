@@ -5,21 +5,27 @@ namespace VoxelGame.Terrain
 {
 	public class VoxelData : ScriptableObject
 	{
-		//[SerializeField] private BiomeData _biome = null;
+        //[SerializeField] private BiomeData _biome = null;
 
-		//[SerializeField] private Vector2Int _faceTopAtlasPos = default;
-		//[SerializeField] private Vector2Int _faceBotAtlasPos = default;
-		//[SerializeField] private Vector2Int _faceSideAtlasPos = default;
+        //[SerializeField] private Vector2Int _faceTopAtlasPos = default;
+        //[SerializeField] private Vector2Int _faceBotAtlasPos = default;
+        //[SerializeField] private Vector2Int _faceSideAtlasPos = default;
 
-		//[SerializeField] private Vector3Int[] _vertexLayout = default;
-		//[SerializeField] private int[] _vertexIndicesFacePosX = default;  // right
-		//[SerializeField] private int[] _vertexIndicesFaceNegX = default;  // left
-		//[SerializeField] private int[] _vertexIndicesFacePosY = default;  // up
-		//[SerializeField] private int[] _vertexIndicesFaceNegY = default;  // down
-		//[SerializeField] private int[] _vertexIndicesFacePosZ = default;  // forward
-		//[SerializeField] private int[] _vertexIndicesFaceNegZ = default;  // backwards
+        //[SerializeField] private Vector3Int[] _vertexLayout = default;
+        //[SerializeField] private int[] _vertexIndicesFacePosX = default;  // right
+        //[SerializeField] private int[] _vertexIndicesFaceNegX = default;  // left
+        //[SerializeField] private int[] _vertexIndicesFacePosY = default;  // up
+        //[SerializeField] private int[] _vertexIndicesFaceNegY = default;  // down
+        //[SerializeField] private int[] _vertexIndicesFacePosZ = default;  // forward
+        //[SerializeField] private int[] _vertexIndicesFaceNegZ = default;  // backwards
+        
+        // Maps normalAxis (0-2) and normalSign (0-1) to a face index (0-5).
+        public static int GetFaceIndex(int normalAxis, int normalSign)
+        {
+            return normalSign * 3 + normalAxis;
+        }
 
-		public static int[] Faces { get; } = { 0, 1, 2, 3 };
+        public static int[] Faces { get; } = { 0, 1, 2, 3 };
 
 		public static Vector3[][] Vertices { get; } = new Vector3[6][]
 		{
@@ -90,7 +96,7 @@ namespace VoxelGame.Terrain
 			AIR = 0,
 			DIRT,
 			GRASS,
-			STONE
+			STONE,
 		}
 	}
 }

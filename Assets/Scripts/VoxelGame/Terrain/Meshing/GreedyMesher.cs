@@ -5,54 +5,55 @@ namespace VoxelGame.Terrain.Meshing
 {
 	public static class GreedyMesher
     {
-        public static void Generate(VoxelData.VoxelType[] voxels, Vector3Int size, GreedyMesherBuffer buffer)
+        public static void Generate(VoxelType[] voxels, Vector3Int size, GreedyMesherBuffer buffer)
         {
-            for (int sliceNormal = 0; sliceNormal < 3; ++sliceNormal)
-			for (int orientation = 0; orientation < 2; ++orientation)
+			for (int sliceNormalSign = 0; sliceNormalSign < 2; ++sliceNormalSign)
+            for (int sliceNormalAxis = 0; sliceNormalAxis < 3; ++sliceNormalAxis)
             {
 				// This gives you essentially what kind of faces you are merging.
-				GenerateSlice(sliceNormal, orientation, size, voxels, buffer);
+				GenerateSlice(sliceNormalAxis, sliceNormalSign, size, voxels, buffer);
             }
         }
 
         private static void GenerateSlice(
-            int dimension, 
-            int orientation,
+            int normalAxis, 
+            int normalSign,
 			Vector3Int size,
-            VoxelData.VoxelType[] voxels, 
+            VoxelType[] voxels, 
             GreedyMesherBuffer buffer
           )
         {
-            int faceIndex = dimension * 2 + orientation;
+            int faceIndex = GetFaceIndex(normalAxis, normalSign);
 
-            Vector3Int sliceSize = ToSliceSpace(size, dimension);
-            Vector3Int slicePSize = new(2 + sliceSize.x, 2 + sliceSize.y, 2 + sliceSize.z);
+            Vector3Int pSize = new(2 + size.x, 2 + size.y, 2 + size.z);
+            Vector3Int sliceSize = ToSliceSpace(size, normalAxis);
+            Vector3Int slicePSize = ToSliceSpace(pSize, normalAxis);
 
             int xStride;
             int yStride;
             int dStride;
 
-            switch (dimension)
+            switch (normalAxis)
             {
                 case 0: // X axis slice: (Y, Z, X)
                 {
-                    xStride = size.y;
-                    yStride = size.x * size.y;
+                    xStride = pSize.x;
+                    yStride = pSize.x * pSize.y;
                     dStride = 1;
                     break;
                 }
                 case 1: // Y axis slice: (X, Z, Y)
                 {
                     xStride = 1;
-                    yStride = size.x * size.y;
-                    dStride = size.x;
+                    yStride = pSize.x * pSize.y;
+                    dStride = pSize.x;
                     break;
                 }
                 default: // Z axis slice: (X, Y, Z)
                 {
                     xStride = 1;
-                    yStride = size.x;
-                    dStride = size.x * size.y;
+                    yStride = pSize.x;
+                    dStride = pSize.x * pSize.y;
                     break;
                 }
             }
@@ -108,8 +109,10 @@ namespace VoxelGame.Terrain.Meshing
                     {
 						// New quad type.
                         quad.Type = type;
-                        quad.MinX = quad.MaxX = (byte)x;
-                        quad.MinY = quad.MaxY = (byte)y;
+                        quad.MinX = (byte)x;
+                        quad.MaxX = (byte)(x + 1);
+                        quad.MinY = (byte)y;
+                        quad.MaxY = (byte)(y + 1);
                         lftType = type;
                     }
                     else
@@ -154,23 +157,24 @@ namespace VoxelGame.Terrain.Meshing
                 for (int i = 0; i < numQuads; ++i)
                 {
                     ref Quad quad = ref quads[i];
-					CreateQuad(faceIndex, dimension, d, quad, buffer);
+					CreateQuad(faceIndex, normalAxis, normalSign, d, quad, buffer);
                 }
             }
         }
 
         private static void CreateQuad(
             int faceIndex, 
-            int dimension,
+            int normalAxis,
+            int normalSign,
             int depth,
             Quad quad, 
             GreedyMesherBuffer buffer
           )
         {
-            int w = quad.MaxX - quad.MinX + 1;
-            int h = quad.MaxY - quad.MinY + 1;
+            int w = quad.MaxX - quad.MinX;
+            int h = quad.MaxY - quad.MinY;
 
-            int uvOffset = ((int) quad.Type - 1) * 3 + TextureFaceOffsets[faceIndex];
+            int uvOffset = ((int)quad.Type - 1) * 3 + TextureFaceOffsets[faceIndex];
 
             Vector3[] vertices = Vertices[faceIndex];
             Vector3[] uvs = UVs3[faceIndex];
@@ -182,11 +186,14 @@ namespace VoxelGame.Terrain.Meshing
 				buffer.Quads.Add(buffer.Vertices.Count);
 
                 Vector3 vertex = vertices[i];
-                byte sliceX = vertex.x > 0 ? quad.MaxX : quad.MinX;
-                byte sliceY = vertex.y > 0 ? quad.MaxY : quad.MinY;
-                buffer.Vertices.Add(
-                    ToLocalSpace(sliceX, sliceY, depth, dimension)
-                  );
+                Vector3Int sliceVertex = ToSliceSpace((int)vertex.x, (int)vertex.y, (int)vertex.z, normalAxis);
+
+                sliceVertex.x = sliceVertex.x > 0 ? quad.MaxX : quad.MinX;
+                sliceVertex.y = sliceVertex.y > 0 ? quad.MaxY : quad.MinY;
+                sliceVertex.z = depth - normalSign;
+
+                Vector3 newVertex = ToLocalSpace(sliceVertex, normalAxis);
+                buffer.Vertices.Add(newVertex);
 
                 Vector3 uv = uvs[i];
                 uv.x *= w;

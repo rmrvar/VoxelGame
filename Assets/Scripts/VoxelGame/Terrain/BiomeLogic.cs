@@ -4,11 +4,20 @@ namespace VoxelGame.Terrain
 { 
 	public static class BiomeLogic
 	{
-        private static Vector3 _offset = Random.insideUnitSphere* 20000;
-        private static Vector3 _offset2 = Random.insideUnitSphere * 20000;
-        private static Vector3 _offset3 = Random.insideUnitSphere * 20000;		
-        private static Vector3 _offset4 = Random.insideUnitSphere * 20000;		
-        private static Vector3 _offset5 = Random.insideUnitSphere * 20000;		
+        private static Vector3 _offset;
+        private static Vector3 _offset2;
+        private static Vector3 _offset3;		
+        private static Vector3 _offset4;		
+        private static Vector3 _offset5;
+
+        public static void Init()
+        {
+            _offset = Random.insideUnitSphere * 20000;
+            _offset2 = Random.insideUnitSphere * 20000;
+            _offset3 = Random.insideUnitSphere * 20000;
+            _offset4 = Random.insideUnitSphere * 20000;
+            _offset5 = Random.insideUnitSphere * 20000;
+        }
 
 		private static int GetFlatlandHeight(Vector3 voxelWorldPosition, Vector3 swappedVoxelWorldPosition)
 		{

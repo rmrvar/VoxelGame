@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
-using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
 
 namespace VoxelGame.Terrain.Meshing
@@ -13,7 +12,7 @@ namespace VoxelGame.Terrain.Meshing
         public readonly int[] TopQuadIndices;
 
         public readonly List<Vector3> Vertices;
-        public readonly List<Vector2> UVs;
+        public readonly List<Vector3> UVs;
         public readonly List<Vector3> Normals;
         public readonly List<int> Quads;
 
@@ -40,7 +39,7 @@ namespace VoxelGame.Terrain.Meshing
             // For initial buffer list sizes, use superflat world.
             int initialListSize = chunkSize.x * chunkSize.z * 4;
             Vertices = new List<Vector3>(initialListSize);
-            UVs = new List<Vector2>(initialListSize);
+            UVs = new List<Vector3>(initialListSize);
             Normals = new List<Vector3>(initialListSize);
             Quads = new List<int>(initialListSize);
         }

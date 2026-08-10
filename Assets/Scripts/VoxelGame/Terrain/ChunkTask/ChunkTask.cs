@@ -1,4 +1,4 @@
-#define DISABLE_BACKGROUND_EXECUTION
+//#define DISABLE_BACKGROUND_EXECUTION
 using System;
 using System.Threading;
 using System.Threading.Tasks;

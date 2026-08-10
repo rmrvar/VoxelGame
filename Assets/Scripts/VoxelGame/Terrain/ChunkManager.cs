@@ -13,7 +13,7 @@ namespace VoxelGame.Terrain
         private Chunk _chunkPrefab = null;
 
         [field: SerializeField] 
-        public Vector3Int ChunkSize { get; private set; } = new(32, 32, 32);
+        public Vector3Int ChunkSize { get; set; } = new(32, 32, 32);
 
 		[SerializeField] 
         private Transform _generationOrigin = null;
@@ -48,21 +48,22 @@ namespace VoxelGame.Terrain
             Random.InitState(_seed);
             _chunks = new Dictionary<Vector3Int, Chunk>();
             Scheduler = new ChunkTaskScheduler(_maxActiveTasks, _maxTaskExecutesPerSecond);
-		}
-
-
-		private void Update()
-		{
-            Scheduler.Update(Time.deltaTime);
-
-			_chunkRefreshTimer -= Time.deltaTime;
-			if (_chunkRefreshTimer <= 0)
-			{
-				//Debug.Log("Loading chunks!");
-				ShowChunksWithinView();
-				_chunkRefreshTimer = _chunkRefreshCooldown;
-			}
+            BiomeLogic.Init();
         }
+
+
+		//private void Update()
+		//{
+        //    Scheduler.Update(Time.deltaTime);
+		//
+		//	_chunkRefreshTimer -= Time.deltaTime;
+		//	if (_chunkRefreshTimer <= 0)
+		//	{
+		//		//Debug.Log("Loading chunks!");
+		//		ShowChunksWithinView();
+		//		_chunkRefreshTimer = _chunkRefreshCooldown;
+		//	}
+        //}
 
 		public Vector3Int GetChunkId(Vector3 pos)
 		{
