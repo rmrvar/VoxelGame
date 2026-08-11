@@ -100,7 +100,8 @@ namespace VoxelGame.Terrain.Meshing
 
                     if (type == VoxelType.AIR)
                     {
-						// Air voxels do not have quads.
+                        // Air voxels do not have quads.
+                        topQuadIndices[x] = -1;
                         continue;
                     }
 
@@ -213,10 +214,16 @@ namespace VoxelGame.Terrain.Meshing
             }
         }
 
-        // TODO: Figure out cleanup/pooling.
-        public static Mesh GetMesh(GreedyMesherBuffer buffer)
+        public static Mesh GetMesh(GreedyMesherBuffer buffer, Mesh mesh = null)
         {
-            Mesh mesh = new();
+            if (mesh == null)
+            {
+                mesh = new Mesh();
+            }
+            else
+            {
+                mesh.Clear();
+            }
             mesh.SetVertices(buffer.Vertices);
             mesh.SetNormals(buffer.Normals);
             mesh.SetUVs(0, buffer.UVs);

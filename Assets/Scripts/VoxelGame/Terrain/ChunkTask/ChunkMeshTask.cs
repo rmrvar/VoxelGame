@@ -54,8 +54,9 @@ namespace VoxelGame.Terrain.ChunkTask
                 return;
             }
 
-            Mesh mesh = GreedyMesher.GetMesh(output.Buffer);
-            Chunk.ApplyMesh(mesh, MeshVersion);
+            Mesh oldMesh = Chunk.GetMesh();
+            Mesh newMesh = GreedyMesher.GetMesh(output.Buffer, oldMesh);
+            Chunk.ApplyMesh(newMesh, MeshVersion);
 
             // TODO: Potentially remove delta box colliders with <= MeshVersion here.
         }

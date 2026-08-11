@@ -70,6 +70,11 @@ namespace VoxelGame.Terrain
             VoxelVersion = 0;
         }
 
+        public Mesh GetMesh()
+        {
+            return _meshFilter.sharedMesh;
+        }
+
         public void ApplyMesh(Mesh mesh, int meshVersion)
         {
             _meshCollider.sharedMesh = mesh;
