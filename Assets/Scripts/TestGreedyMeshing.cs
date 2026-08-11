@@ -360,8 +360,152 @@ public class TestGreedyMeshing : MonoBehaviour
         }
     }
 
+    private void CreateDoubleTripleVoxelWithExtrusionAndIsland()
+    {
+        VoxelData.VoxelType[] voxels =
+        {
+            // Z = 0
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            // Z = 1
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.GRASS,
+            VoxelData.VoxelType.GRASS,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            // Z = 2
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.GRASS,
+            VoxelData.VoxelType.GRASS,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.GRASS,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            // Z = 3
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.STONE,
+            VoxelData.VoxelType.STONE,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            // Z = 4
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.DIRT,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            // Z = 5
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+            VoxelData.VoxelType.AIR,
+        };
+        Vector3Int size = new(3, 2, 4);
+        ChunkManager.Instance.ChunkSize = size;
+        GreedyMesherBuffer buffer = GreedyMesherBuffer.Borrow();
+        GreedyMesher.Generate(voxels, size, buffer);
+        Mesh mesh = GreedyMesher.GetMesh(buffer);
+        MeshFilter filter = GetComponent<MeshFilter>();
+        if (filter != null)
+        {
+            filter.sharedMesh = mesh;
+        }
+    }
+
+
     private void Start()
     {
-        CreateDoubleTripleVoxelWithExtrusion();
+        CreateDoubleTripleVoxelWithExtrusionAndIsland();
     }
 }
