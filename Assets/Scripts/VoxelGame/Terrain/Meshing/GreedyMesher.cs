@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using static VoxelGame.Terrain.VoxelData;
 
@@ -74,7 +75,7 @@ namespace VoxelGame.Terrain.Meshing
                     int ym1 = y - 1;
 
                     int i2 = xm1 + ym1 * sliceSize.x;
-                    if (voxels[i1 - dStride] == VoxelType.AIR)
+                    if (voxels[i1 + dStride * (normalSign == 0 ? +1 : -1)] == VoxelType.AIR)
                     {
 						// The back voxel is see-through so this quad can potentially be drawn.
 					    types[i2] = voxels[i1];
@@ -85,7 +86,7 @@ namespace VoxelGame.Terrain.Meshing
                     }
                 }
 
-                topQuadIndices[^1] = -1; // Only the last element actually needs to be reset.
+                Array.Fill(topQuadIndices, -1);
 
                 // Grow quads
                 int numQuads = 0;
@@ -139,7 +140,7 @@ namespace VoxelGame.Terrain.Meshing
                     {
 						// Has a top quad.
                         ref Quad topQuad = ref quads[topQuadIndex];
-                        if (topQuad.MinX == quad.MinX)
+                        if (topQuad.MinX == quad.MinX && topQuad.Type == quad.Type)
                         {
 							// This quad gets taken over.
                             ++topQuad.MaxY;
@@ -196,8 +197,17 @@ namespace VoxelGame.Terrain.Meshing
                 buffer.Vertices.Add(newVertex);
 
                 Vector3 uv = uvs[i];
-                uv.x *= w;
-                uv.y *= h;
+                if (faceIndex is 0 or 3)
+                {
+                    // Exception for +/-X for some reason I forgot about.
+                    uv.x *= h;
+                    uv.y *= w;
+                }
+                else
+                {
+                    uv.x *= w;
+                    uv.y *= h;
+                }
                 uv.z += uvOffset;
                 buffer.UVs.Add(uv);
             }
