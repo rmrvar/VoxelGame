@@ -674,10 +674,10 @@ MonoBehaviour:
   _chunkPrefab: {fileID: 6746295407634173444, guid: 5d78c3d49de314747921acdf12eb90d4, type: 3}
   <ChunkSize>k__BackingField: {x: 32, y: 32, z: 32}
   _generationOrigin: {fileID: 1828581181}
-  _generationRadius: 35
-  _chunkRefreshCooldown: 1
-  _maxActiveTasks: 8
-  _maxTaskExecutesPerSecond: 8
+  _generationRadius: 100
+  _chunkRefreshCooldown: 0.5
+  _maxActiveTasks: 4
+  _maxTaskExecutesPerSecond: 30
 --- !u!4 &1531652811
 Transform:
   m_ObjectHideFlags: 0
@@ -911,7 +911,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1839029062
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -990,7 +990,7 @@ Transform:
   m_GameObject: {fileID: 1839029061}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -10.27781, y: 38.9222, z: 7.56268}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

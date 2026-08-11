@@ -59,6 +59,8 @@ namespace VoxelGame.Terrain.ChunkTask
             Chunk.ApplyMesh(newMesh, MeshVersion);
 
             // TODO: Potentially remove delta box colliders with <= MeshVersion here.
+
+            //Debug.Log($"Finished meshing chunk {Chunk.Id}!");
         }
 
         private bool IsNeighborhoodLoaded()

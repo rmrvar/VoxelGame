@@ -51,19 +51,18 @@ namespace VoxelGame.Terrain
             BiomeLogic.Init();
         }
 
-
-		//private void Update()
-		//{
-        //    Scheduler.Update(Time.deltaTime);
-		//
-		//	_chunkRefreshTimer -= Time.deltaTime;
-		//	if (_chunkRefreshTimer <= 0)
-		//	{
-		//		//Debug.Log("Loading chunks!");
-		//		ShowChunksWithinView();
-		//		_chunkRefreshTimer = _chunkRefreshCooldown;
-		//	}
-        //}
+		private void Update()
+		{
+			Scheduler.Update(Time.deltaTime);
+		
+			_chunkRefreshTimer -= Time.deltaTime;
+			if (_chunkRefreshTimer <= 0)
+			{
+				//Debug.Log("Loading chunks!");
+				ShowChunksWithinView();
+				_chunkRefreshTimer = _chunkRefreshCooldown;
+			}
+		}
 
 		public Vector3Int GetChunkId(Vector3 pos)
 		{
@@ -112,6 +111,7 @@ namespace VoxelGame.Terrain
 				{  // We have to create this Chunk.
 					//Debug.Log("Spawning Chunk " + chunkId);
 					chunk = Instantiate(_chunkPrefab, chunkPos, Quaternion.identity, this.transform);
+					chunk.Init(chunkId, chunkPos);
                     _chunks.Add(chunkId, chunk);
 
 					var sqrDistance = (chunkPos - _generationOrigin.position).sqrMagnitude;

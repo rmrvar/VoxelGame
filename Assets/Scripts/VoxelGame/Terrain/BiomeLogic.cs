@@ -83,28 +83,37 @@ namespace VoxelGame.Terrain
 			return mountainsHeight;
 		}
 
-		public static VoxelData.VoxelType GetVoxelType(Vector3Int voxelWorldPosition, int heightAtThisPosition)
-		{
-			var transformedPos = Vector3.Scale(voxelWorldPosition + _offset2, new Vector3(+0.0316F, -0.0356F));
-			var dirtyDepth = Mathf.FloorToInt(Mathf.PerlinNoise(transformedPos.x, transformedPos.z) * 5) + 1;
+        public static VoxelData.VoxelType GetVoxelType(
+            Vector3Int voxelWorldPosition,
+            int heightAtThisPosition
+          )
+        {
+            var transformedPos = voxelWorldPosition + _offset2;
 
-            if (heightAtThisPosition > voxelWorldPosition.y)
+            var dirtDepth = Mathf.FloorToInt(
+                Mathf.PerlinNoise(
+                    transformedPos.x * 0.0316f,
+                    transformedPos.z * 0.0356f
+                  ) * 5
+              ) + 1;
+
+            if (voxelWorldPosition.y > heightAtThisPosition)
             {
                 return VoxelData.VoxelType.AIR;
-            } else
-			if (heightAtThisPosition == voxelWorldPosition.y)
-			{
-				return VoxelData.VoxelType.GRASS;
-			} else
-			if (heightAtThisPosition - voxelWorldPosition.y < dirtyDepth)
-			{
-				return VoxelData.VoxelType.DIRT;
-			}
-			else
-			{
-				return VoxelData.VoxelType.STONE;
-			}
-		}
+            }
+
+            if (voxelWorldPosition.y == heightAtThisPosition)
+            {
+                return VoxelData.VoxelType.GRASS;
+            }
+
+            if (heightAtThisPosition - voxelWorldPosition.y < dirtDepth)
+            {
+                return VoxelData.VoxelType.DIRT;
+            }
+
+            return VoxelData.VoxelType.STONE;
+        }
 
         public static int GetHeight(int x, int z)
         {
@@ -113,16 +122,6 @@ namespace VoxelGame.Terrain
 
 		public static int GetHeight(Vector3 voxelWorldPosition)
 		{
-			//if (voxelWorldPosition == new Vector3(0, 0, 0))
-			//{
-			//	return 1;
-			//}
-			//if (voxelWorldPosition == new Vector3(1, 0, 0))
-			//{
-			//	return 1;
-			//}
-			//return 0;
-
 			var swappedVoxelWorldPosition = new Vector3(voxelWorldPosition.z, 0, voxelWorldPosition.x);
 
 			var biomePos1 = Vector3.Scale(voxelWorldPosition + _offset, new Vector3(+0.005F, -0.001F));

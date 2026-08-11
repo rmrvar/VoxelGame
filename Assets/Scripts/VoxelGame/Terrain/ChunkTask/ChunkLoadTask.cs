@@ -55,7 +55,7 @@ namespace VoxelGame.Terrain.ChunkTask
 
                     Vector3Int position = chunkPosition + new Vector3Int(x, y, z);
                     int voxelTypeIndex = x + y * strideY + z * strideZ;
-                    VoxelData.VoxelType voxelType = BiomeLogic.GetVoxelType(position, y - height);
+                    VoxelData.VoxelType voxelType = BiomeLogic.GetVoxelType(position, height);
 
                     input.Voxels[voxelTypeIndex] = voxelType;
 
