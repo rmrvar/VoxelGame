@@ -188,7 +188,7 @@ namespace VoxelGame.Terrain.Meshing
 				buffer.Quads.Add(buffer.Vertices.Count);
 
                 Vector3 vertex = vertices[i];
-                Vector3Int sliceVertex = ToSliceSpace((int)vertex.x, (int)vertex.y, (int)vertex.z, normalAxis);
+                Vector3 sliceVertex = ToSliceSpace(vertex, normalAxis);
 
                 sliceVertex.x = sliceVertex.x > 0 ? quad.MaxX : quad.MinX;
                 sliceVertex.y = sliceVertex.y > 0 ? quad.MaxY : quad.MinY;
@@ -232,6 +232,12 @@ namespace VoxelGame.Terrain.Meshing
         }
 
         // Transforms from local space to slice space.
+        public static Vector3 ToSliceSpace(Vector3 position, int axis)
+        {
+            return ToSliceSpace(position.x, position.y, position.z, axis);
+        }
+
+        // Transforms from local space to slice space.
         public static Vector3Int ToSliceSpace(Vector3Int position, int axis)
         {
             return ToSliceSpace(position.x, position.y, position.z, axis);
@@ -251,6 +257,26 @@ namespace VoxelGame.Terrain.Meshing
             };
         }
 
+        // Transforms from local space to slice space.
+        public static Vector3 ToSliceSpace(float x, float y, float z, int axis)
+        {
+            return axis switch
+            {
+                // X axis slice: (Y, Z, X)
+                0 => new Vector3(y, z, x),
+                // Y axis slice: (X, Z, Y)
+                1 => new Vector3(x, z, y),
+                // Z axis slice: (X, Y, Z)
+                _ => new Vector3(x, y, z)
+            };
+        }
+
+        // Transforms from slice space to local space.
+        public static Vector3 ToLocalSpace(Vector3 position, int axis)
+        {
+            return ToLocalSpace(position.x, position.y, position.z, axis);
+        }
+
         // Transforms from slice space to local space.
         public static Vector3Int ToLocalSpace(Vector3Int position, int axis)
         {
@@ -268,6 +294,20 @@ namespace VoxelGame.Terrain.Meshing
                 1 => new Vector3Int(x, z, y),
                 // Z axis slice: (X, Y, Z)
                 _ => new Vector3Int(x, y, z)
+            };
+        }
+
+        // Transforms from slice space to local space.
+        public static Vector3 ToLocalSpace(float x, float y, float z, int axis)
+        {
+            return axis switch
+            {
+                // X axis slice: (Z, X, Y)
+                0 => new Vector3(z, x, y),
+                // Y axis slice: (X, Z, Y)
+                1 => new Vector3(x, z, y),
+                // Z axis slice: (X, Y, Z)
+                _ => new Vector3(x, y, z)
             };
         }
     }
