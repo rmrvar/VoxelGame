@@ -6,29 +6,27 @@ namespace VoxelGame.Terrain.Meshing
 {
 	public static class GreedyMesher
     {
-        public static void Generate(VoxelType[] voxels, Vector3Int size, GreedyMesherBuffer buffer)
+        public static void Generate(VoxelType[] voxels, GreedyMesherBuffer buffer)
         {
 			for (int sliceNormalSign = 0; sliceNormalSign < 2; ++sliceNormalSign)
             for (int sliceNormalAxis = 0; sliceNormalAxis < 3; ++sliceNormalAxis)
             {
 				// This gives you essentially what kind of faces you are merging.
-				GenerateSlice(sliceNormalAxis, sliceNormalSign, size, voxels, buffer);
+				GenerateSlice(sliceNormalAxis, sliceNormalSign, voxels, buffer);
             }
         }
 
         private static void GenerateSlice(
             int normalAxis, 
             int normalSign,
-			Vector3Int size,
             VoxelType[] voxels, 
             GreedyMesherBuffer buffer
           )
         {
             int faceIndex = GetFaceIndex(normalAxis, normalSign);
 
-            Vector3Int pSize = new(2 + size.x, 2 + size.y, 2 + size.z);
-            Vector3Int sliceSize = ToSliceSpace(size, normalAxis);
-            Vector3Int slicePSize = ToSliceSpace(pSize, normalAxis);
+            Vector3Int sliceSize = ToSliceSpace(ChunkConfig.Size, normalAxis);
+            Vector3Int slicePSize = ToSliceSpace(ChunkConfig.PSize, normalAxis);
 
             int xStride;
             int yStride;
@@ -38,23 +36,24 @@ namespace VoxelGame.Terrain.Meshing
             {
                 case 0: // X axis slice: (Y, Z, X)
                 {
-                    xStride = pSize.x;
-                    yStride = pSize.x * pSize.y;
-                    dStride = 1;
+                    xStride = ChunkConfig.PStrideY;
+                    yStride = ChunkConfig.PStrideZ;
+                    dStride = ChunkConfig.PStrideX;
                     break;
                 }
                 case 1: // Y axis slice: (X, Z, Y)
                 {
-                    xStride = 1;
-                    yStride = pSize.x * pSize.y;
-                    dStride = pSize.x;
+                    xStride = ChunkConfig.PStrideX;
+                    yStride = ChunkConfig.PStrideZ;
+                    dStride = ChunkConfig.PStrideY;
                     break;
                 }
                 default: // Z axis slice: (X, Y, Z)
                 {
-                    xStride = 1;
-                    yStride = pSize.x;
-                    dStride = pSize.x * pSize.y;
+                    Debug.Assert(normalAxis == 2);
+                    xStride = ChunkConfig.PStrideX;
+                    yStride = ChunkConfig.PStrideY;
+                    dStride = ChunkConfig.PStrideZ;
                     break;
                 }
             }

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Priority_Queue;
 
 namespace VoxelGame.Terrain.ChunkTask
@@ -12,6 +11,8 @@ namespace VoxelGame.Terrain.ChunkTask
             _executeCountdown = _timeBetweenExecutes;
         }
 
+        public int NumScheduledTasks => _chunkTasks.Count;
+
         public void Update(float deltaTime)
         {
             _executeCountdown -= deltaTime;
@@ -21,49 +22,41 @@ namespace VoxelGame.Terrain.ChunkTask
                 return; // Nothing to do.
             }
 
-            if (_numActiveTasks >= _maxActiveTasks)
-            {
-                return; // All executors are busy, wait for one to finish.
-            }
-
             if (_executeCountdown > 0)
             {
                 return; // Wait for the next execute time.
             }
 
-            // Find the next task to execute, skipping cancelled tasks and tasks that cannot be executed.
-            ChunkTask task = null;
-            while (task == null && _chunkTasks.Count > 0)
+            // Find the next task that needs a worker, skipping cancelled tasks and completing lazy tasks immediately.
+            while (_chunkTasks.Count > 0)
             {
-                task = _chunkTasks.Dequeue();
+                ChunkTask task = _chunkTasks.First;
+
                 if (task.IsCancelled())
                 {
-                    task = null;
-                } else
-                if (!task.CanExecute())
-                {
-                    _skippedTasks.Add(task);
-                    task = null;
+                    _chunkTasks.Dequeue();
+                    continue;
                 }
-            }
 
-            // Re-add skipped tasks to the queue with the same priority.
-            foreach (ChunkTask skippedTask in _skippedTasks)
-            {
-                _chunkTasks.Enqueue(skippedTask, skippedTask.Priority);
-            }
-            _skippedTasks.Clear();
+                if (task.TryLazyExecute())
+                {
+                    // TODO: Consider limiting this to _maxLazyExecutesPerFrame.
+                    _chunkTasks.Dequeue();
+                    continue;
+                }
 
-            if (task == null)
-            {
-                // No task to execute, return early.
+                if (_numActiveTasks >= _maxActiveTasks)
+                {
+                    return;
+                }
+
+                _chunkTasks.Dequeue();
+
+                OnTaskStarted();
+                _ = task.ExecuteAsync(OnTaskCompleted);
+               _executeCountdown = _timeBetweenExecutes;
                 return;
             }
-
-            OnTaskStarted();
-            _ = task.ExecuteAsync(OnTaskCompleted);
-
-            _executeCountdown = _timeBetweenExecutes;
         }
 
         public void Schedule(ChunkTask task, float priority)
@@ -87,7 +80,6 @@ namespace VoxelGame.Terrain.ChunkTask
         }
 
         private readonly FastPriorityQueue<ChunkTask> _chunkTasks = new(10000);
-        private readonly List<ChunkTask> _skippedTasks = new();
 
         private readonly int _maxActiveTasks;
         private readonly float _timeBetweenExecutes;

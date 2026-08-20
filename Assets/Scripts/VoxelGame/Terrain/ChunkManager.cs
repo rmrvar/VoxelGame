@@ -9,16 +9,17 @@ namespace VoxelGame.Terrain
 		[SerializeField]
         private int _seed = 0;
 
-		[SerializeField]
-        private Chunk _chunkPrefab = null;
+        [SerializeField]
+        private Vector3Int _chunkSize = new(32, 32, 32);
 
-        [field: SerializeField] 
-        public Vector3Int ChunkSize { get; set; } = new(32, 32, 32);
-
+        [SerializeField] 
+        private Transform _loadOrigin;
 		[SerializeField] 
-        private Transform _generationOrigin = null;
-		[SerializeField] 
-        private float _generationRadius = 100;
+        private float _loadRadiusXZ = 300;
+        [SerializeField]
+        private float _loadRadiusY = 100;
+        [SerializeField]
+        private float _collisionRadius = 64;
 
         [SerializeField]
         private float _chunkRefreshCooldown = 1;
@@ -29,15 +30,78 @@ namespace VoxelGame.Terrain
 
 		public static ChunkManager Instance { get; private set; }
 
-		public ChunkTaskScheduler Scheduler { get; private set; }
+        public void ScheduleLoadTask(Chunk chunk)
+        {
+            _scheduler.Schedule(
+                new ChunkLoadTask(chunk, chunk.GetCancellationToken()),
+                priority: GetChunkPriority(chunk)
+              );
+        }
 
+        public void ScheduleMeshTask(Chunk chunk)
+        {
+            _scheduler.Schedule(
+                new ChunkMeshTask(chunk, chunk.GetCancellationToken()),
+                priority: GetChunkPriority(chunk)
+              );
+        }
 
-		private void Awake()
+        public void ScheduleImmediateLoadTask(Chunk chunk)
+        {
+            _scheduler.Interrupt(
+                new ChunkLoadTask(
+                    chunk,
+                    chunk.GetCancellationToken(),
+                    shouldRunInBackground: false
+                  )
+              );
+        }
+
+        public bool GetChunkHeightRange(Vector3Int id, out int minHeight, out int maxHeight)
+        {
+            Vector2Int id2 = new(id.x, id.z);
+            if (_chunkIdXZToHeightRange.TryGetValue(id2, out Vector2Int heightRange))
+            {
+                minHeight = heightRange.x;
+                maxHeight = heightRange.y;
+                return true;
+            }
+
+            minHeight = 0;
+            maxHeight = 0;
+            return false;
+        }
+
+        public void SetChunkHeightRange(Vector3Int id, int minHeight, int maxHeight)
+        {
+            Vector2Int id2 = new Vector2Int(id.x, id.z);
+            _chunkIdXZToHeightRange[id2] = new Vector2Int(minHeight, maxHeight);
+        }
+
+        public Vector3Int GetChunkId(Vector3 pos)
+        {
+            pos.Scale(new Vector3(1.0F / ChunkConfig.SizeX, 1.0F / ChunkConfig.SizeY, 1.0F / ChunkConfig.SizeZ));
+            return new Vector3Int(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z));
+        }
+
+        public Chunk GetChunkByPos(Vector3 pos)
+        {
+            _chunks.TryGetValue(GetChunkId(pos), out Chunk chunk);
+            return chunk;
+        }
+
+        public Chunk GetChunkById(Vector3Int id)
+        {
+            _chunks.TryGetValue(id, out Chunk chunk);
+            return chunk;
+        }
+
+        private void Awake()
 		{
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
+            Debug.Assert(Instance == null);
 			if (Instance != null)
-			{
-				Debug.LogAssertion($"ChunkManager.Awake: Attempted to create multiple instances of type {typeof(ChunkManager)}!");
+            {
 				Destroy(this.gameObject);
 				return;
 			}
@@ -46,83 +110,127 @@ namespace VoxelGame.Terrain
 			Instance = this;
 
             Random.InitState(_seed);
-            _chunks = new Dictionary<Vector3Int, Chunk>();
-            Scheduler = new ChunkTaskScheduler(_maxActiveTasks, _maxTaskExecutesPerSecond);
             BiomeLogic.Init();
+			ChunkConfig.Init(_chunkSize);
+
+            _collisionRadiusSqr = _collisionRadius * _collisionRadius;
+
+            _ratioX = Mathf.CeilToInt(_loadRadiusXZ / ChunkConfig.SizeX);
+            _ratioY = Mathf.CeilToInt( _loadRadiusY / ChunkConfig.SizeY);
+            _ratioZ = Mathf.CeilToInt(_loadRadiusXZ / ChunkConfig.SizeZ);
+            int sizeX = _ratioX * 2 + 1;
+            int sizeY = _ratioY * 2 + 1;
+            _neighborY = new Chunk[sizeX];
+            _neighborZ = new Chunk[sizeY, sizeX];
+
+            _scheduler = new ChunkTaskScheduler(_maxActiveTasks, _maxTaskExecutesPerSecond);
         }
 
 		private void Update()
 		{
-			Scheduler.Update(Time.deltaTime);
+			_scheduler.Update(Time.deltaTime);
 		
 			_chunkRefreshTimer -= Time.deltaTime;
 			if (_chunkRefreshTimer <= 0)
 			{
-				//Debug.Log("Loading chunks!");
 				ShowChunksWithinView();
 				_chunkRefreshTimer = _chunkRefreshCooldown;
 			}
 		}
 
-		public Vector3Int GetChunkId(Vector3 pos)
-		{
-			pos.Scale(new Vector3(1.0F / ChunkSize.x, 1.0F / ChunkSize.y, 1.0F / ChunkSize.z));
-			return new Vector3Int(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z));
-		}
-
-		public Chunk GetChunkByPos(Vector3 pos)
-		{
-			_chunks.TryGetValue(GetChunkId(pos), out Chunk chunk);
-			return chunk;
-		}
-
-        public Chunk GetChunkById(Vector3Int id)
+        private void ShowChunksWithinView()
         {
-            _chunks.TryGetValue(id, out Chunk chunk);
-            return chunk;
+            Vector3 origin = _loadOrigin.position;
+            Vector3Int originChunkId = GetChunkId(origin);
+
+            for (int z = -_ratioZ; z <= _ratioZ; ++z)
+            for (int y = -_ratioY; y <= _ratioY; ++y)
+            {
+                int iy = y + _ratioY;
+
+                _neighborX = null;
+
+                Vector3Int chunkId = originChunkId + new Vector3Int(-_ratioX, y, z);
+                Vector3 chunkPos = new(
+                    (chunkId.x + 0.5F) * ChunkConfig.SizeX,
+                    (chunkId.y + 0.5F) * ChunkConfig.SizeY,
+                    (chunkId.z + 0.5F) * ChunkConfig.SizeZ
+                  );
+
+                for (int x = -_ratioX; x <= _ratioX; ++x)
+                {
+                    int ix = x + _ratioX;
+
+                    float sqrDistance = (chunkPos - origin).sqrMagnitude;
+                    bool shouldCollide = sqrDistance <= _collisionRadiusSqr;
+
+                    if (_chunks.TryGetValue(chunkId, out var chunk))
+                    {
+                        if (chunk.Mono != null)
+                        {
+                            chunk.Mono.CanCollide = shouldCollide;
+                        }
+                    }
+                    else
+                    {
+                        chunk = new Chunk(chunkId);
+                        _chunks.Add(chunkId, chunk);
+
+                        Chunk neighborNegX = x > -_ratioX
+                            ? _neighborX
+                            : null;
+                        Chunk neighborNegY = y > -_ratioY
+                            ? _neighborY[ix]
+                            : null;
+                        Chunk neighborNegZ = z > -_ratioZ
+                            ? _neighborZ[iy, ix]
+                            : null;
+
+                        neighborNegX?.InitNeighbor(chunk, 0);
+                        neighborNegY?.InitNeighbor(chunk, 1);
+                        neighborNegZ?.InitNeighbor(chunk, 2);
+
+                        chunk.InitNeighbor(neighborNegX, 3);
+                        chunk.InitNeighbor(neighborNegY, 4);
+                        chunk.InitNeighbor(neighborNegZ, 5);
+
+                        ScheduleLoadTask(chunk);
+                    }
+
+                    _neighborX = chunk;
+                    _neighborY[ix] = chunk;
+                    _neighborZ[iy, ix] = chunk;
+
+                    ++chunkId.x;
+                    chunkPos.x += ChunkConfig.SizeX;
+                }
+            }
         }
 
-		private void ShowChunksWithinView()
-		{
-			int ratio = Mathf.CeilToInt(_generationRadius / ChunkSize.x);
+        private float GetChunkPriority(Chunk chunk)
+        {
+            Vector3 chunkPos = new(
+                (chunk.Id.x + 0.5F) * ChunkConfig.SizeX,
+                (chunk.Id.y + 0.5F) * ChunkConfig.SizeY,
+                (chunk.Id.z + 0.5F) * ChunkConfig.SizeZ
+              );
+            return (chunkPos - _loadOrigin.position).sqrMagnitude;
+        }
 
-			//Debug.Log(ratio);
+        private float _collisionRadiusSqr;
 
-			// Get the Chunks enveloping the player.
-			for (int z = -ratio; z < +ratio; ++z)
-            for (int y = -ratio; y < +ratio; ++y)
-			for (int x = -ratio; x < +ratio; ++x)
-            {
-                Vector3 offset = new(x * ChunkSize.x, y * ChunkSize.y, z * ChunkSize.z);
-                Vector3 position = _generationOrigin.position + offset;
+        private int _ratioX;
+        private int _ratioY;
+        private int _ratioZ;
 
-				var chunkId = GetChunkId(position);
-				var chunkPos = new Vector3Int(chunkId.x * ChunkSize.x, chunkId.y * ChunkSize.y, chunkId.z * ChunkSize.z);
+        private Chunk _neighborX;
+        private Chunk[] _neighborY;
+        private Chunk[,] _neighborZ;
 
-				if (_chunks.TryGetValue(chunkId, out var chunk))
-				{
-					if (!chunk.gameObject.activeInHierarchy)
-					{
-						//Debug.Log("Reactivating chunk!");
-						chunk.gameObject.SetActive(true);
-					}	
-				}
-				else
-				{  // We have to create this Chunk.
-					//Debug.Log("Spawning Chunk " + chunkId);
-					chunk = Instantiate(_chunkPrefab, chunkPos, Quaternion.identity, this.transform);
-					chunk.Init(chunkId, chunkPos);
-                    _chunks.Add(chunkId, chunk);
-
-					var sqrDistance = (chunkPos - _generationOrigin.position).sqrMagnitude;
-
-                    // Schedule the chunk's tasks.
-                    Scheduler.Schedule(new ChunkLoadTask(chunk, chunk.GetCancellationToken()), priority: sqrDistance);
-				}
-            }
-		}
-
-        private Dictionary<Vector3Int, Chunk> _chunks;
+        private readonly Dictionary<Vector3Int, Chunk> _chunks = new();
+        private readonly Dictionary<Vector2Int, Vector2Int> _chunkIdXZToHeightRange = new();
 		private float _chunkRefreshTimer;
+
+        private ChunkTaskScheduler _scheduler;
     }
 }

@@ -1,31 +1,14 @@
-using System.Linq;
 using UnityEngine;
 
 namespace VoxelGame.Terrain
 {
-	public class VoxelData : ScriptableObject
+	public static class VoxelData
 	{
-        //[SerializeField] private BiomeData _biome = null;
-
-        //[SerializeField] private Vector2Int _faceTopAtlasPos = default;
-        //[SerializeField] private Vector2Int _faceBotAtlasPos = default;
-        //[SerializeField] private Vector2Int _faceSideAtlasPos = default;
-
-        //[SerializeField] private Vector3Int[] _vertexLayout = default;
-        //[SerializeField] private int[] _vertexIndicesFacePosX = default;  // right
-        //[SerializeField] private int[] _vertexIndicesFaceNegX = default;  // left
-        //[SerializeField] private int[] _vertexIndicesFacePosY = default;  // up
-        //[SerializeField] private int[] _vertexIndicesFaceNegY = default;  // down
-        //[SerializeField] private int[] _vertexIndicesFacePosZ = default;  // forward
-        //[SerializeField] private int[] _vertexIndicesFaceNegZ = default;  // backwards
-        
         // Maps normalAxis (0-2) and normalSign (0-1) to a face index (0-5).
         public static int GetFaceIndex(int normalAxis, int normalSign)
         {
             return normalSign * 3 + normalAxis;
         }
-
-        public static int[] Faces { get; } = { 0, 1, 2, 3 };
 
 		public static Vector3[][] Vertices { get; } = new Vector3[6][]
 		{
@@ -58,24 +41,8 @@ namespace VoxelGame.Terrain
 			// -Z
 			new Vector3[4] { new(0, 0), new(0, 1), new(1, 1), new(1, 0), },
 		};
-
-		public static int[] TextureFaceOffsets { get; } = new int[6]
-		{
-			0,
-			1,
-			0,
-			0,
-			2,
-			0
-		};
-
-		public static Vector3[] GetScaledAndOffsetUVs3(int faceId, int textureNo)
-		{
-			var offset = textureNo * 3 + TextureFaceOffsets[faceId];
-			return UVs3[faceId].Select(x => x + new Vector3(0, 0, offset)).ToArray();
-		}
-
-		public static Vector3[][] Normals { get; } = new Vector3[6][]
+	
+        public static Vector3[][] Normals { get; } = new Vector3[6][]
 		{
 			// +X
 			new Vector3[4] { new(+1,  0,  0), new(+1,  0,  0), new(+1,  0,  0), new(+1,  0,  0), },
@@ -89,6 +56,16 @@ namespace VoxelGame.Terrain
 			new Vector3[4] { new( 0, -1,  0), new( 0, -1,  0), new( 0, -1,  0), new( 0, -1,  0), },
 			// -Z
 			new Vector3[4] { new( 0,  0, -1), new( 0,  0, -1), new( 0,  0, -1), new( 0,  0, -1), },
+		};
+
+		public static int[] TextureFaceOffsets { get; } = new int[6]
+		{
+			0,
+			1,
+			0,
+			0,
+			2,
+			0
 		};
 
 		public enum VoxelType : byte

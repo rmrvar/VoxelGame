@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Threading;
 using UnityEngine;
 using VoxelGame.Terrain.Meshing;
+using static VoxelGame.Terrain.VoxelData;
 
 namespace VoxelGame.Terrain.ChunkTask
 {
@@ -23,14 +24,15 @@ namespace VoxelGame.Terrain.ChunkTask
 
         public override bool IsCancelled() => Chunk.MeshVersion >= MeshVersion || base.IsCancelled();
 
-        public override bool CanExecute() => IsNeighborhoodLoaded();
+        public override bool TryLazyExecute()
+        {
+            return Chunk.IsMaterializedMonotype(out VoxelType voxelData) && voxelData == VoxelType.AIR;
+        }
 
         protected override ChunkMeshTaskIn PrepareInput()
         {
-            // TODO: Check if even need to request buffer. If voxels == null => uniformVoxelType != null. Call a different mesher in that case.
-
-            ChunkMeshTaskIn input = new(ChunkManager.Instance.ChunkSize);
-            CopyVoxels(input.Voxels, input.ChunkSize);
+            ChunkMeshTaskIn input = new();
+            CopyVoxels(input.Voxels);
             return input;
         }
 
@@ -38,7 +40,7 @@ namespace VoxelGame.Terrain.ChunkTask
         {
             ChunkMeshTaskOut output = new() { Buffer = input.Buffer };
 
-            GreedyMesher.Generate(input.Voxels, input.ChunkSize, input.Buffer);
+            GreedyMesher.Generate(input.Voxels, input.Buffer);
 
             return output;
         }
@@ -54,139 +56,303 @@ namespace VoxelGame.Terrain.ChunkTask
                 return;
             }
 
-            Mesh oldMesh = Chunk.GetMesh();
-            Mesh newMesh = GreedyMesher.GetMesh(output.Buffer, oldMesh);
-            Chunk.ApplyMesh(newMesh, MeshVersion);
-
-            // TODO: Potentially remove delta box colliders with <= MeshVersion here.
-
-            //Debug.Log($"Finished meshing chunk {Chunk.Id}!");
-        }
-
-        private bool IsNeighborhoodLoaded()
-        {
-            Chunk negX = ChunkManager.Instance.GetChunkById(Chunk.Id + new Vector3Int(-1,  0,  0));
-            Chunk posX = ChunkManager.Instance.GetChunkById(Chunk.Id + new Vector3Int(+1,  0,  0));
-            Chunk negY = ChunkManager.Instance.GetChunkById(Chunk.Id + new Vector3Int( 0, -1,  0));
-            Chunk posY = ChunkManager.Instance.GetChunkById(Chunk.Id + new Vector3Int( 0, +1,  0));
-            Chunk negZ = ChunkManager.Instance.GetChunkById(Chunk.Id + new Vector3Int( 0,  0, -1));
-            Chunk posZ = ChunkManager.Instance.GetChunkById(Chunk.Id + new Vector3Int( 0,  0, +1));
-            return
-                  Chunk != null && Chunk.IsLoaded
-               &&  negX != null && negX.IsLoaded
-               &&  posX != null && posX.IsLoaded
-               &&  negY != null && negY.IsLoaded
-               &&  posY != null && posY.IsLoaded
-               &&  negZ != null && negZ.IsLoaded
-               &&  posZ != null && posZ.IsLoaded;
-        }
-
-        private void CopyVoxels(VoxelData.VoxelType[] voxels, Vector3Int size)
-        {
-            Chunk negX = ChunkManager.Instance.GetChunkById(Chunk.Id + new Vector3Int(-1,  0,  0));
-            Chunk posX = ChunkManager.Instance.GetChunkById(Chunk.Id + new Vector3Int(+1,  0,  0));
-            Chunk negY = ChunkManager.Instance.GetChunkById(Chunk.Id + new Vector3Int( 0, -1,  0));
-            Chunk posY = ChunkManager.Instance.GetChunkById(Chunk.Id + new Vector3Int( 0, +1,  0));
-            Chunk negZ = ChunkManager.Instance.GetChunkById(Chunk.Id + new Vector3Int( 0,  0, -1));
-            Chunk posZ = ChunkManager.Instance.GetChunkById(Chunk.Id + new Vector3Int( 0,  0, +1));
-
-            int yStride = size.x + 2;
-            int zStride = (size.x + 2) * (size.y + 2);
-
-            for (int z = 0; z < size.z + 2; ++z)
-            for (int y = 0; y < size.y + 2; ++y)
-            for (int x = 0; x < size.x + 2; ++x)
+            if (Chunk.Mono == null)
             {
-                int i = x + y * yStride + z * zStride;
-                voxels[i] = GetVoxel(x, y, z, size, negX, posX, negY, posY, negZ, posZ);
+                // TODO: Request a Mono from pool.
             }
+
+            GreedyMesher.GetMesh(output.Buffer, Chunk.Mono.Mesh);
+            Chunk.Mono.Refresh();
+            Chunk.MeshVersion = MeshVersion;
         }
 
-        private VoxelData.VoxelType GetVoxel(
-            int x,
-            int y,
-            int z,
-            Vector3Int size,
-            Chunk negX,
-            Chunk posX,
-            Chunk negY,
-            Chunk posY,
-            Chunk negZ,
-            Chunk posZ
+        private void CopyVoxels(VoxelType[] destination)
+        {
+            CopyInterior(destination, Chunk);
+            FillFace(destination, Chunk.PosX, 0, 1);
+            FillFace(destination, Chunk.PosY, 1, 1);
+            FillFace(destination, Chunk.PosZ, 2, 1);
+            FillFace(destination, Chunk.NegX, 0, 0);
+            FillFace(destination, Chunk.NegY, 1, 0);
+            FillFace(destination, Chunk.NegZ, 2, 0);
+        }
+
+        private void CopyInterior(
+            VoxelType[] destination, 
+            Chunk chunk
           )
         {
-            x--;
-            y--;
-            z--;
+            Debug.Assert(chunk.IsMaterialized);
 
+            bool isMonotype = chunk.IsMaterializedMonotype(out VoxelType monotype);
 
-            int outside = 0;
+            for (int z = 0; z < ChunkConfig.SizeZ; ++z)
+            for (int y = 0; y < ChunkConfig.SizeY; ++y)
+            {
+                int dstIndex = 1 + (y + 1) * ChunkConfig.PStrideY + (z + 1) * ChunkConfig.PStrideZ;
 
-            if (x < 0 || x >= size.x)
-            {
-                ++outside;
+                if (isMonotype)
+                {
+                    Array.Fill(destination, monotype, dstIndex, ChunkConfig.SizeX);
+                }
+                else
+                {
+                    int srcIndex = y * ChunkConfig.StrideY + z * ChunkConfig.StrideZ;
+                    Array.Copy(Chunk.PolyData.Data, srcIndex, destination, dstIndex, ChunkConfig.SizeX);
+                }
             }
-            if (y < 0 || y >= size.y)
-            {
-                ++outside;
-            }
-            if (z < 0 || z >= size.z)
-            {
-                ++outside;
-            }
+        }
 
-            // Corner chunk. Doesn't affect greedy meshing so just take air.
-            if (outside >= 2)
+        private void FillFace(
+            VoxelType[] destination,
+            Chunk neighbor,
+            int axis,
+            int sign
+          )
+        {
+            if (neighbor == null)
             {
-                return VoxelData.VoxelType.AIR;
+                // Very rare exception that we have unloaded a neighboring chunk (which requires you to move
+                // very far away) and then reached it again and modified it in a way requiring a remesh but 
+                // before the neighboring chunk was reloaded. In this case, just be conservative and show the
+                // entire border.
+                FillFace(
+                    destination,
+                    VoxelType.AIR,
+                    axis,
+                    sign
+                  );
+            } else
+            if (neighbor.IsUnmaterializedSolid)
+            {
+                FillFace(
+                    destination,
+                    VoxelType.DIRT,
+                    axis,
+                    sign
+                  );
+            } else
+            if (neighbor.IsUnmaterializedEmpty)
+            {
+                FillFace(
+                    destination,
+                    VoxelType.AIR,
+                    axis,
+                    sign
+                  );
+            } else
+            if (neighbor.IsMaterializedMonotype(out VoxelType uniform))
+            {
+                FillFace(
+                    destination, 
+                    uniform, 
+                    axis, 
+                    sign
+                  );
+            } else
+            {
+                Debug.Assert(neighbor.IsMaterializedPolytype);
+                CopyFace(
+                    destination,
+                    neighbor.PolyData.Data,
+                    axis,
+                    sign
+                  );
             }
+        }
 
-            if (x < 0)
+        // Fills the specified border face of flat 3D array <destination> with <value>.
+        // <axis> specifies the face axis and <sign> its direction: 0 for negative, 1 for positive.
+        private void FillFace(
+            VoxelType[] destination,
+            VoxelType value,
+            int axis,
+            int sign
+          )
+        {
+            Vector3Int size = ChunkConfig.Size;
+
+            switch (axis)
             {
-                return negX.GetVoxel(x + size.x, y, z);
+                case 0:
+                {
+                    int dstX = sign == 0 
+                        ? 0 
+                        : size.x + 1;
+
+                    for (int z = 0; z < size.z; ++z)
+                    for (int y = 0; y < size.y; ++y)
+                    {
+                        int dstIndex = dstX
+                            + (y + 1) * ChunkConfig.PStrideY
+                            + (z + 1) * ChunkConfig.PStrideZ;
+
+                        destination[dstIndex] = value;
+                    }
+
+                    break;
+                }
+                case 1:
+                {
+                    int dstY = sign == 0 
+                        ? 0 
+                        : size.y + 1;
+
+                    for (int z = 0; z < size.z; ++z)
+                    {
+                        int dstIndex = (z + 1) * ChunkConfig.PStrideZ
+                            + dstY * ChunkConfig.PStrideY
+                            + 1;
+
+                        Array.Fill(
+                            destination,
+                            value,
+                            dstIndex,
+                            ChunkConfig.PStrideY
+                          );
+                    }
+
+                    break;
+                }
+                case 2:
+                {
+                    // Also fills the border edges, which are not needed but avoids multiple fill operations.
+                    int dstZ = sign == 0 
+                        ? 0 
+                        : size.z + 1;
+
+                    int dstIndex = dstZ * ChunkConfig.PStrideZ;
+
+                    Array.Fill(
+                        destination,
+                        value,
+                        dstIndex,
+                        ChunkConfig.PStrideZ
+                      );
+
+                    break;
+                }
             }
-            if (x >= size.x)
+        }
+
+        // Fills the specified border face of flat 3D array <destination> with values copied from the opposite border face of flat 3D array <source>.
+        // <axis> specifies the face axis and <sign> its direction: 0 for negative, 1 for positive.
+        // <destination> is padded by one voxel on each side, while <source> is sized according to <size>.
+        private void CopyFace(
+            VoxelType[] destination,
+            VoxelType[] source,
+            int axis,
+            int sign
+          )
+        {
+
+            switch (axis)
             {
-                return posX.GetVoxel(x - size.x, y, z);
+                case 0:
+                {
+                    int srcX = sign == 0
+                        ? 0
+                        : ChunkConfig.SizeX - 1;
+
+                    int dstX = sign == 0
+                        ? 0
+                        : ChunkConfig.SizeX + 1;
+
+                    for (int z = 0; z < ChunkConfig.SizeZ; ++z)
+                    for (int y = 0; y < ChunkConfig.SizeY; ++y)
+                    {
+                        int srcIndex = srcX
+                            + y * ChunkConfig.StrideY
+                            + z * ChunkConfig.StrideZ;
+
+                        int dstIndex = dstX
+                            + (y + 1) * ChunkConfig.PStrideY
+                            + (z + 1) * ChunkConfig.PStrideZ;
+
+                        destination[dstIndex] = source[srcIndex];
+                    }
+
+                    break;
+                }
+                case 1:
+                {
+                    int srcY = sign == 0
+                        ? 0
+                        : ChunkConfig.SizeY - 1;
+
+                    int dstY = sign == 0
+                        ? 0
+                        : ChunkConfig.SizeY + 1;
+
+                    for (int z = 0; z < ChunkConfig.SizeZ; ++z)
+                    {
+                        int srcIndex = srcY * ChunkConfig.StrideY
+                            + z * ChunkConfig.StrideZ;
+
+                        int dstIndex = (z + 1) * ChunkConfig.PStrideZ
+                            + dstY * ChunkConfig.PStrideY
+                            + 1;
+
+                        Array.Copy(
+                            source,
+                            srcIndex,
+                            destination,
+                            dstIndex,
+                            ChunkConfig.SizeX
+                          );
+                    }
+
+                    break;
+                }
+                default:
+                {
+                    Debug.Assert(axis == 2);
+                    int srcZ = sign == 0
+                        ? 0
+                        : ChunkConfig.SizeZ - 1;
+
+                    int dstZ = sign == 0
+                        ? 0
+                        : ChunkConfig.SizeZ + 1;
+
+                    for (int y = 0; y < ChunkConfig.SizeY; ++y)
+                    {
+                        int srcIndex = srcZ * ChunkConfig.StrideZ
+                            + y * ChunkConfig.StrideY;
+
+                        int dstIndex = dstZ * ChunkConfig.PStrideZ
+                            + (y + 1) * ChunkConfig.PStrideY
+                            + 1;
+
+                        Array.Copy(
+                            source,
+                            srcIndex,
+                            destination,
+                            dstIndex,
+                            ChunkConfig.SizeX
+                          );
+                    }
+
+                    break;
+                }
             }
-            if (y < 0)
-            {
-                return negY.GetVoxel(x, y + size.y, z);
-            }
-            if (y >= size.y)
-            {
-                return posY.GetVoxel(x, y - size.y, z);
-            }
-            if (z < 0)
-            {
-                return negZ.GetVoxel(x, y, z + size.z);
-            }
-            if (z >= size.z)
-            {
-                return posZ.GetVoxel(x, y, z - size.z);
-            }
-            return Chunk.GetVoxel(x, y, z);
         }
     }
 
     public class ChunkMeshTaskIn : IDisposable
     {
-        public VoxelData.VoxelType[] Voxels;
+        public VoxelType[] Voxels;
         public GreedyMesherBuffer Buffer;
-        public Vector3Int ChunkSize;
 
-        public ChunkMeshTaskIn(Vector3Int chunkSize)
+        public ChunkMeshTaskIn()
         {
-            ChunkSize = chunkSize;
-            Voxels = ArrayPool<VoxelData.VoxelType>.Shared.Rent(
-                (chunkSize.x + 2) * (chunkSize.y + 2) * (chunkSize.z + 2)
-              );
+            Voxels = ArrayPool<VoxelType>.Shared.Rent(ChunkConfig.PVolume);
             Buffer = GreedyMesherBuffer.Borrow();
         }
 
         public void Dispose()
         {
-            ArrayPool<VoxelData.VoxelType>.Shared.Return(Voxels);
+            ArrayPool<VoxelType>.Shared.Return(Voxels);
             GreedyMesherBuffer.Return(Buffer);
         }
     }

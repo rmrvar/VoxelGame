@@ -1,31 +1,42 @@
 using System;
 using System.Threading;
 using UnityEngine;
+using static VoxelGame.Terrain.VoxelData;
 
 namespace VoxelGame.Terrain
 {
-	public class Chunk : MonoBehaviour
+	public class Chunk : IDisposable
     {
-        [SerializeField]
-        private MeshFilter _meshFilter;
+        public ChunkMono Mono { get; private set; }
 
-        [SerializeField]
-        private MeshCollider _meshCollider;
-
-        public int MeshVersion { get; private set; } = -1;
-
-        public int VoxelVersion { get; private set; } = -1;
+        public int MeshVersion { get; set; } = -1;
+        
+        public int VoxelVersion { get; set; } = -1;
 
         public Vector3Int Position { get; private set; }
         
         public Vector3Int Id { get; private set; }
 
-        public bool IsLoaded => VoxelVersion >= 0;
+        public bool IsLoaded { get; private set; }
 
-        public void Init(Vector3Int id, Vector3Int position)
+        public Chunk PosX => _posX;
+        public Chunk PosY => _posY;
+        public Chunk PosZ => _posZ;
+        public Chunk NegX => _negX;
+        public Chunk NegY => _negY;
+        public Chunk NegZ => _negZ;
+
+        public MonotypeChunkData MonoData => _monoData;
+        public PolytypeChunkData PolyData { get; private set; }
+
+        public Chunk(Vector3Int id)
         {
             Id = id;
-            Position = position;
+            Position = new Vector3Int(
+                id.x * ChunkConfig.SizeX,
+                id.y * ChunkConfig.SizeY,
+                id.z * ChunkConfig.SizeZ
+              );
         }
 
         public CancellationToken GetCancellationToken()
@@ -33,68 +44,107 @@ namespace VoxelGame.Terrain
             return _cts.Token;
         }
 
-        public bool IsUniform(out VoxelData.VoxelType type)
-        {
-            if (_voxels == null)
-            {
-                type = _uniformVoxelType;
-                return true;
-            }
+        public bool IsUnmaterializedSolid => !IsMaterialized && _monoData.Data != VoxelType.AIR;
 
-            type = default;
-            return false;
+        public bool IsUnmaterializedEmpty => !IsMaterialized && _monoData.Data == VoxelType.AIR;
+
+        public bool IsMaterialized { get; private set; }
+
+        public bool IsMaterializedMonotype(out VoxelType type)
+        {
+            type = _monoData.Data;
+            return IsMaterialized && PolyData == null;
         }
 
-        public VoxelData.VoxelType GetVoxel(int x, int y, int z)
+        public bool IsMaterializedPolytype => IsMaterialized && PolyData != null;
+
+        public void InitUnmaterializedSolid()
         {
-            if (_voxels == null)
-            {
-                return _uniformVoxelType;
-            }
-            Vector3Int chunkSize = ChunkManager.Instance.ChunkSize;
-            int yStride = chunkSize.x;
-            int zStride = chunkSize.x * chunkSize.y;
-            return _voxels[x + y * yStride + z * zStride];
+            IsMaterialized = false;
+            _monoData = new MonotypeChunkData(VoxelType.DIRT);
+            PolyData = null;
         }
 
-        public void SetVoxels(VoxelData.VoxelType[] voxels)
+        public void InitUnmaterializedEmpty()
         {
-            _voxels = voxels;
+            IsMaterialized = false;
+            _monoData = new MonotypeChunkData(VoxelType.AIR);
+            PolyData = null;
+        }
+
+        public void InitMaterializedMonotype(MonotypeChunkData monoData)
+        {
+            IsMaterialized = true;
+            _monoData = monoData;
+            PolyData = null;
             VoxelVersion = 0;
         }
 
-        public void SetUniform(VoxelData.VoxelType uniformVoxelType)
+        public void InitMaterializedPolytype(PolytypeChunkData polyData)
         {
-            _voxels = null;
-            _uniformVoxelType = uniformVoxelType;
+            IsMaterialized = true;
+            _monoData = default; // Irrelevant
+            PolyData = polyData;
             VoxelVersion = 0;
         }
 
-        public Mesh GetMesh()
+        public void MarkLoaded()
         {
-            return _meshFilter.sharedMesh;
+            IsLoaded = true;
         }
 
-        public void ApplyMesh(Mesh mesh, int meshVersion)
+        public byte LoadedNeighborMask { get; private set; }
+
+        public void SetLoadedNeighborBit(int faceIndex, bool isSet)
         {
-            _meshCollider.sharedMesh = mesh;
-            _meshFilter.sharedMesh = mesh;
-            MeshVersion = meshVersion;
+            byte mask = (byte)(1 << faceIndex);
+            if (isSet)
+            {
+                LoadedNeighborMask |= mask;
+            }
+            else
+            {
+                LoadedNeighborMask &= (byte)~mask;
+            }
         }
 
-        private void Awake()
+        public void InitNeighbor(Chunk chunk, int faceIndex)
         {
-            Debug.Assert(_meshFilter != null, "Mesh filter is null!");
-            Debug.Assert(_meshCollider != null, "Mesh collider is null!");
+            switch (faceIndex)
+            {
+                case 0: _posX = chunk; break;
+                case 1: _posY = chunk; break;
+                case 2: _posZ = chunk; break;
+                case 3: _negX = chunk; break;
+                case 4: _negY = chunk; break;
+                case 5: _negZ = chunk; break;
+            }
         }
 
-        private void OnDestroy()
+        // TODO: Hook up when start unloading chunks.
+        public void Dispose()
         {
             _cts.Cancel();
+            _cts.Dispose();
+
+            if (Mono != null)
+            {
+                // TODO: Return Mono to pool.
+                Mono = null;
+            }
+
+            PolyData?.Dispose();
+            PolyData = null;
         }
 
-        private VoxelData.VoxelType[] _voxels;
-        private VoxelData.VoxelType _uniformVoxelType;
+        private MonotypeChunkData _monoData;
+
+        private Chunk _posX;
+        private Chunk _posY;
+        private Chunk _posZ;
+        private Chunk _negX;
+        private Chunk _negY;
+        private Chunk _negZ;
 
         private readonly CancellationTokenSource _cts = new();
     }

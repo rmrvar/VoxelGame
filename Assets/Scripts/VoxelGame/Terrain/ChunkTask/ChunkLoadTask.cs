@@ -10,62 +10,93 @@ namespace VoxelGame.Terrain.ChunkTask
     {
         public ChunkLoadTask(
             Chunk chunk, 
-            CancellationToken token
+            CancellationToken token,
+            bool shouldRunInBackground = true
           ) 
-            : base(chunk, token, shouldRunInBackground: true)
+            : base(chunk, token, shouldRunInBackground)
         {
+        }
+
+        public override bool TryLazyExecute()
+        {
+            if (!ChunkManager.Instance.GetChunkHeightRange(Chunk.Id, out int minHeight, out int maxHeight))
+            {
+                return false;
+            }
+
+            // TODO: Return false if ChunkManager.Instance.SaveSystem has an entry for this chunk ID (includes if neighbor made change on border).
+
+            // Check if there is no visible face in this chunk, so we can skip materializing it until needed.
+            float minChunkY = Chunk.Position.y;
+            float maxChunkY = Chunk.Position.y + ChunkConfig.SizeY - 1;
+            if (maxHeight < minChunkY)
+            {
+                Chunk.InitUnmaterializedEmpty();
+                FinishLoad(isMaterialized: false);
+                return true;
+            }
+
+            if (minHeight > maxChunkY)
+            {
+                Chunk.InitUnmaterializedSolid(); 
+                FinishLoad(isMaterialized: false);
+                return true;
+            }
+
+            return false;
         }
 
         protected override ChunkLoadTaskIn PrepareInput()
         {
-            return new ChunkLoadTaskIn(Chunk.Position, ChunkManager.Instance.ChunkSize);
+            return new ChunkLoadTaskIn(Chunk.Position);
         }
 
         protected override ChunkLoadTaskOut Execute(ChunkLoadTaskIn input, CancellationToken cancellationToken)
         {
             Vector3Int chunkPosition = input.Position;
-            Vector3Int chunkSize = input.Size;
 
-            for (int z = 0; z < chunkSize.z; ++z)
-            for (int x = 0; x < chunkSize.x; ++x)
+            int minHeight = int.MaxValue;
+            int maxHeight = int.MinValue;
+
+            for (int z = 0; z < ChunkConfig.SizeZ; ++z)
+            for (int x = 0; x < ChunkConfig.SizeX; ++x)
             {
-                int heightIndex = x + z * chunkSize.x;
+                int heightIndex = x + z * ChunkConfig.SizeX;
                 int height = BiomeLogic.GetHeight(
                     chunkPosition.x + x, 
                     chunkPosition.z + z
                   );
                 input.Heights[heightIndex] = height;
+                minHeight = Mathf.Min(minHeight, height);
+                maxHeight = Mathf.Max(maxHeight, height);
             }
 
             bool isUniform = true;
-            VoxelData.VoxelType? uniformVoxelType = null;
+            VoxelData.VoxelType? monotype = null;
 
-            int strideY = chunkSize.x;
-            int strideZ = chunkSize.x * chunkSize.z;
-
-            for (int z = 0; z < chunkSize.z; ++z)
-            for (int y = 0; y < chunkSize.y; ++y)
+            for (int z = 0; z < ChunkConfig.SizeZ; ++z)
+            for (int y = 0; y < ChunkConfig.SizeY; ++y)
             {
-                int heightIndex0 = z * chunkSize.x;
+                int heightIndex0 = z * ChunkConfig.SizeX;
 
-                for (int x = 0; x < chunkSize.x; ++x)
+                for (int x = 0; x < ChunkConfig.SizeX; ++x)
                 {
                     int heightIndex = heightIndex0 + x;
                     int height = input.Heights[heightIndex];
 
                     Vector3Int position = chunkPosition + new Vector3Int(x, y, z);
-                    int voxelTypeIndex = x + y * strideY + z * strideZ;
+                    int voxelTypeIndex = x + y * ChunkConfig.StrideY + z * ChunkConfig.StrideZ;
                     VoxelData.VoxelType voxelType = BiomeLogic.GetVoxelType(position, height);
 
-                    input.Voxels[voxelTypeIndex] = voxelType;
+                    input.PolytypeChunkData.Data[voxelTypeIndex] = voxelType;
 
                     if (isUniform)
                     {
-                        if (uniformVoxelType == null)
+                        if (monotype == null)
                         {
-                            uniformVoxelType = voxelType;
+                            monotype = voxelType;
                         } else 
-                        if (uniformVoxelType != voxelType)
+                        if (monotype != voxelType)
                         {
                             isUniform = false;
                         }
@@ -76,8 +107,10 @@ namespace VoxelGame.Terrain.ChunkTask
             ChunkLoadTaskOut output = new()
             {
                 Input = input,
-                IsUniform = isUniform,
-                UniformVoxelType = uniformVoxelType.GetValueOrDefault(),
+                IsMonotype = isUniform,
+                MonotypeChunkData = new MonotypeChunkData(monotype.GetValueOrDefault()),
+                MinHeight = minHeight,
+                MaxHeight = maxHeight
             };
             return output;
         }
@@ -89,52 +122,78 @@ namespace VoxelGame.Terrain.ChunkTask
                 return; // Something went wrong.
             }
 
-            if (!output.IsUniform)
+            ChunkManager.Instance.SetChunkHeightRange(Chunk.Id, output.MinHeight, output.MaxHeight);
+
+            if (output.IsMonotype)
             {
-                Chunk.SetVoxels(output.Input.Voxels);
-                output.Input.DetachBuffers();
+                Chunk.InitMaterializedMonotype(output.MonotypeChunkData);
             }
             else
             {
-                Chunk.SetUniform(output.UniformVoxelType);
+                Chunk.InitMaterializedPolytype(output.Input.PolytypeChunkData);
+                output.Input.PolytypeChunkData = null; // This transfers ownership to Chunk.
             }
 
-            float diagonalSqDist = 
-                output.Input.Size.x * output.Input.Size.x + output.Input.Size.y * output.Input.Size.y + output.Input.Size.z * output.Input.Size.z;
+            FinishLoad(isMaterialized: true);
+        }
 
-            ChunkManager.Instance.Scheduler.Schedule(
-                new ChunkMeshTask(Chunk, Chunk.GetCancellationToken()),
-                Priority + diagonalSqDist
-              );
+        private void FinishLoad(bool isMaterialized)
+        {
+            Chunk.MarkLoaded();
+
+            NotifyNeighbor(Chunk.PosX, 3);
+            NotifyNeighbor(Chunk.PosY, 4);
+            NotifyNeighbor(Chunk.PosZ, 5);
+            NotifyNeighbor(Chunk.NegX, 0);
+            NotifyNeighbor(Chunk.NegY, 1);
+            NotifyNeighbor(Chunk.NegZ, 2);
+
+            if (isMaterialized && IsNeighborhoodLoaded(Chunk))
+            {
+                ChunkManager.Instance.ScheduleMeshTask(Chunk);
+            }
+        }
+
+        private static void NotifyNeighbor(Chunk neighbor, int faceIndex)
+        {
+            if (neighbor == null)
+            {
+                return;
+            }
+
+            neighbor.SetLoadedNeighborBit(faceIndex, true);
+
+            if (neighbor.IsLoaded && neighbor.IsMaterialized && IsNeighborhoodLoaded(neighbor))
+            {
+                ChunkManager.Instance.ScheduleMeshTask(neighbor);
+            }
+        }
+
+        private static bool IsNeighborhoodLoaded(Chunk chunk)
+        {
+            return chunk.LoadedNeighborMask == 0b111111;
         }
     }
 
     public class ChunkLoadTaskIn : IDisposable
     {
         public int[] Heights;
-        public VoxelData.VoxelType[] Voxels;
-        public Vector3Int Size;
+        public PolytypeChunkData PolytypeChunkData;
         public Vector3Int Position;
 
-        public ChunkLoadTaskIn(Vector3Int position, Vector3Int size)
+        public ChunkLoadTaskIn(Vector3Int position)
         {
             Position = position;
-            Size = size;
-            Voxels = ArrayPool<VoxelData.VoxelType>.Shared.Rent(size.x * size.y * size.z);
-            Heights = ArrayPool<int>.Shared.Rent(size.x * size.z);
-        }
-
-        public void DetachBuffers()
-        {
-            Voxels = null;
+            PolytypeChunkData = new PolytypeChunkData();
+            Heights = ArrayPool<int>.Shared.Rent(ChunkConfig.SizeX * ChunkConfig.SizeZ);
         }
 
         public void Dispose()
         {
-            if (Voxels != null)
+            if (PolytypeChunkData != null)
             {
-                ArrayPool<VoxelData.VoxelType>.Shared.Return(Voxels);
-                Voxels = null;
+                PolytypeChunkData.Dispose();
+                PolytypeChunkData = null;
             }
             ArrayPool<int>.Shared.Return(Heights);
         }
@@ -143,7 +202,9 @@ namespace VoxelGame.Terrain.ChunkTask
     public class ChunkLoadTaskOut
     {
         public ChunkLoadTaskIn Input;
-        public bool IsUniform;
-        public VoxelData.VoxelType UniformVoxelType;
+        public bool IsMonotype;
+        public MonotypeChunkData MonotypeChunkData;
+        public int MinHeight;
+        public int MaxHeight;
     }
 }

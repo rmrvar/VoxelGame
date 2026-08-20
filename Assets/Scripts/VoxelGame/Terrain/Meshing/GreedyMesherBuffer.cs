@@ -28,7 +28,7 @@ namespace VoxelGame.Terrain.Meshing
 
         private GreedyMesherBuffer()
         {
-            Vector3Int chunkSize = ChunkManager.Instance.ChunkSize;
+            Vector3Int chunkSize = ChunkConfig.Size;
 
             int maxDimension = Mathf.Max(chunkSize.x, chunkSize.y, chunkSize.z);
 
