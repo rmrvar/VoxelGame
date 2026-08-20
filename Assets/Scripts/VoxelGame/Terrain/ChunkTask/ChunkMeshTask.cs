@@ -51,18 +51,19 @@ namespace VoxelGame.Terrain.ChunkTask
             {
                 return;
             }
-            if (Chunk.MeshVersion >= MeshVersion) // TODO: Make this a helper function.
+            if (Chunk.MeshVersion >= MeshVersion)
             {
                 return;
             }
 
             if (Chunk.Mono == null)
             {
-                // TODO: Request a Mono from pool.
+                Chunk.InitMono();
             }
 
             GreedyMesher.GetMesh(output.Buffer, Chunk.Mono.Mesh);
             Chunk.Mono.Refresh();
+            Chunk.Mono.IsVisible = true;
             Chunk.MeshVersion = MeshVersion;
         }
 
@@ -347,13 +348,13 @@ namespace VoxelGame.Terrain.ChunkTask
         public ChunkMeshTaskIn()
         {
             Voxels = ArrayPool<VoxelType>.Shared.Rent(ChunkConfig.PVolume);
-            Buffer = GreedyMesherBuffer.Borrow();
+            Buffer = ChunkManager.Instance.GreedyMesherBufferPool.Borrow();
         }
 
         public void Dispose()
         {
             ArrayPool<VoxelType>.Shared.Return(Voxels);
-            GreedyMesherBuffer.Return(Buffer);
+            ChunkManager.Instance.GreedyMesherBufferPool.Return(Buffer);
         }
     }
 

@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+using VoxelGame.Pooling;
 using VoxelGame.Terrain.ChunkTask;
+using VoxelGame.Terrain.Meshing;
 
 namespace VoxelGame.Terrain
 {
@@ -28,7 +30,13 @@ namespace VoxelGame.Terrain
         [SerializeField]
         private int _maxTaskExecutesPerSecond = 8;
 
+        [SerializeField]
+        private ChunkMono _chunkMonoPrefab;
+
 		public static ChunkManager Instance { get; private set; }
+
+        public Pool<ChunkMono> ChunkMonoPool { get; private set; }
+        public Pool<GreedyMesherBuffer> GreedyMesherBufferPool { get; private set; }
 
         public void ScheduleLoadTask(Chunk chunk)
         {
@@ -124,6 +132,15 @@ namespace VoxelGame.Terrain
             _neighborZ = new Chunk[sizeY, sizeX];
 
             _scheduler = new ChunkTaskScheduler(_maxActiveTasks, _maxTaskExecutesPerSecond);
+
+            ChunkMonoPool = new Pool<ChunkMono>(
+                () => Instantiate(_chunkMonoPrefab, transform),
+                1000
+              );
+            GreedyMesherBufferPool = new Pool<GreedyMesherBuffer>(
+                () => new GreedyMesherBuffer(),
+                _maxActiveTasks + 2
+              );
         }
 
 		private void Update()

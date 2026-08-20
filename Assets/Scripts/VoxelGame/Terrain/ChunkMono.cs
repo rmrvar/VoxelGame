@@ -1,11 +1,12 @@
 using UnityEngine;
+using VoxelGame.Pooling;
 
 namespace VoxelGame.Terrain
 {
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]
     [RequireComponent(typeof(MeshCollider))]
-    public class ChunkMono : MonoBehaviour
+    public class ChunkMono : MonoBehaviour, IPoolable
     {
         public Mesh Mesh { get; private set; }
 
@@ -27,6 +28,20 @@ namespace VoxelGame.Terrain
             _meshCollider.sharedMesh = Mesh;
         }
 
+        public void OnBorrowed()
+        {
+            Mesh.Clear();
+            _meshRenderer.enabled = false;
+            _meshCollider.enabled = false;
+
+            gameObject.SetActive(true);
+        }
+
+        public void OnReturned()
+        {
+            gameObject.SetActive(false);
+        }
+
         private void Awake()
         {
             _meshFilter = GetComponent<MeshFilter>();
@@ -36,11 +51,6 @@ namespace VoxelGame.Terrain
             Mesh = new Mesh();
             _meshFilter.sharedMesh = Mesh;
             _meshCollider.sharedMesh = Mesh;
-            // TODO: Make this class poolable and have everything after this happen in OnBorrowed.
-            // Mesh.Clear(); // Uncomment when pooling added.
-            // Refresh(); // Maybe uncomment when pooling added???
-            _meshRenderer.enabled = false;
-            _meshCollider.enabled = false;
         }
 
         private MeshFilter _meshFilter;

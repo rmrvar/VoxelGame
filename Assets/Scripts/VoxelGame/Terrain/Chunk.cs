@@ -121,6 +121,12 @@ namespace VoxelGame.Terrain
             }
         }
 
+        public void InitMono()
+        {
+            Debug.Assert(Mono == null);
+            Mono = ChunkManager.Instance.ChunkMonoPool.Borrow();
+        }
+
         // TODO: Hook up when start unloading chunks.
         public void Dispose()
         {
@@ -129,7 +135,7 @@ namespace VoxelGame.Terrain
 
             if (Mono != null)
             {
-                // TODO: Return Mono to pool.
+                ChunkManager.Instance.ChunkMonoPool.Return(Mono);
                 Mono = null;
             }
 
