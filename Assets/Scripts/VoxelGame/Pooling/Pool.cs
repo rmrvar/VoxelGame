@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 using UnityEngine.Pool;
 
 namespace VoxelGame.Pooling
@@ -7,17 +8,19 @@ namespace VoxelGame.Pooling
     {
         public int Count => _pool.CountInactive;
 
-        public Pool(Func<T> create, int initialCapacity = 0)
+        public Pool(Func<T> create, int initialCount = 0)
         {
+            Debug.Assert(create != null);
             _pool = new ObjectPool<T>(
                 create,
                 item => item.OnBorrowed(),
                 item => item.OnReturned()
               );
+            _create = create;
 
-            for (int i = 0; i < initialCapacity; ++i)
+            for (int i = 0; i < initialCount; ++i)
             {
-                _pool.Release(create());
+                PrewarmOne();
             }
         }
 
@@ -31,6 +34,12 @@ namespace VoxelGame.Pooling
             _pool.Release(item);
         }
 
+        public void PrewarmOne()
+        {
+            _pool.Release(_create());
+        }
+
         private readonly ObjectPool<T> _pool;
+        private readonly Func<T> _create;
     }
 }

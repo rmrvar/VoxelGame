@@ -125,6 +125,7 @@ namespace VoxelGame.Terrain
         {
             Debug.Assert(Mono == null);
             Mono = ChunkManager.Instance.ChunkMonoPool.Borrow();
+            Mono.transform.position = Position;
         }
 
         // TODO: Hook up when start unloading chunks.

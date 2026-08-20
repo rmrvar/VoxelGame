@@ -33,7 +33,13 @@ namespace VoxelGame.Terrain
         [SerializeField]
         private ChunkMono _chunkMonoPrefab;
 
-		public static ChunkManager Instance { get; private set; }
+        [SerializeField]
+        private int _chunkMonoPoolRefillThreshold = 1000;
+
+        [SerializeField]
+        private int _chunkMonoPoolRefillRate = 20;
+
+        public static ChunkManager Instance { get; private set; }
 
         public Pool<ChunkMono> ChunkMonoPool { get; private set; }
         public Pool<GreedyMesherBuffer> GreedyMesherBufferPool { get; private set; }
@@ -114,7 +120,6 @@ namespace VoxelGame.Terrain
 				return;
 			}
 #endif
-
 			Instance = this;
 
             Random.InitState(_seed);
@@ -135,25 +140,54 @@ namespace VoxelGame.Terrain
 
             ChunkMonoPool = new Pool<ChunkMono>(
                 () => Instantiate(_chunkMonoPrefab, transform),
-                1000
+                _chunkMonoPoolRefillThreshold
               );
             GreedyMesherBufferPool = new Pool<GreedyMesherBuffer>(
                 () => new GreedyMesherBuffer(),
                 _maxActiveTasks + 2
               );
+
+            _chunkMonoPoolRefillCooldown = 1f / _chunkMonoPoolRefillRate;
+            _chunkMonoPoolRefillTimer = _chunkMonoPoolRefillCooldown;
         }
 
 		private void Update()
 		{
 			_scheduler.Update(Time.deltaTime);
-		
-			_chunkRefreshTimer -= Time.deltaTime;
-			if (_chunkRefreshTimer <= 0)
-			{
-				ShowChunksWithinView();
-				_chunkRefreshTimer = _chunkRefreshCooldown;
-			}
+		    
+            RefillPools();
+
+            LoadChunks();
 		}
+
+        private void RefillPools()
+        {
+            if (ChunkMonoPool.Count >= _chunkMonoPoolRefillThreshold)
+            {
+                return;
+            }
+
+            _chunkMonoPoolRefillTimer -= Time.deltaTime;
+            if (_chunkMonoPoolRefillTimer > 0)
+            {
+                return;
+            }
+
+            ChunkMonoPool.PrewarmOne();
+            _chunkMonoPoolRefillTimer = _chunkMonoPoolRefillCooldown;
+        }
+
+        private void LoadChunks()
+        {
+            _chunkRefreshTimer -= Time.deltaTime;
+            if (_chunkRefreshTimer > 0)
+            {
+                return;
+            }
+
+            ShowChunksWithinView();
+            _chunkRefreshTimer = _chunkRefreshCooldown;
+        }
 
         private void ShowChunksWithinView()
         {
@@ -249,5 +283,8 @@ namespace VoxelGame.Terrain
 		private float _chunkRefreshTimer;
 
         private ChunkTaskScheduler _scheduler;
+
+        private float _chunkMonoPoolRefillTimer;
+        private float _chunkMonoPoolRefillCooldown;
     }
 }
