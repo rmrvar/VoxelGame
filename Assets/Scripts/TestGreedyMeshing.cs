@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using VoxelGame.Pooling;
 using VoxelGame.Terrain;
 using VoxelGame.Terrain.Meshing;
 
@@ -8,7 +9,7 @@ public class TestGreedyMeshing : MonoBehaviour
 {
     private void CreateSingleVoxel()
     {
-        VoxelData.VoxelType[] voxels = 
+        VoxelData.VoxelType[] types = 
         {
             // Z = 0
             VoxelData.VoxelType.AIR,
@@ -42,20 +43,12 @@ public class TestGreedyMeshing : MonoBehaviour
             VoxelData.VoxelType.AIR,
         };
         Vector3Int size = new(1, 1, 1);
-        ChunkManager.Instance.ChunkSize = size;
-        GreedyMesherBuffer buffer = GreedyMesherBuffer.Borrow();
-        GreedyMesher.Generate(voxels, size, buffer);
-        Mesh mesh = GreedyMesher.GetMesh(buffer);
-        MeshFilter filter = GetComponent<MeshFilter>();
-        if (filter != null)
-        {
-            filter.sharedMesh = mesh;
-        }
+        DoTest(size, types);
     }
 
     private void CreateDoubleVoxel()
     {
-        VoxelData.VoxelType[] voxels =
+        VoxelData.VoxelType[] types =
         {
             // Z = 0
             VoxelData.VoxelType.AIR,
@@ -99,20 +92,12 @@ public class TestGreedyMeshing : MonoBehaviour
             VoxelData.VoxelType.AIR,
         };
         Vector3Int size = new(1, 1, 2);
-        ChunkManager.Instance.ChunkSize = size;
-        GreedyMesherBuffer buffer = GreedyMesherBuffer.Borrow();
-        GreedyMesher.Generate(voxels, size, buffer);
-        Mesh mesh = GreedyMesher.GetMesh(buffer);
-        MeshFilter filter = GetComponent<MeshFilter>();
-        if (filter != null)
-        {
-            filter.sharedMesh = mesh;
-        }
+        DoTest(size, types);
     }
 
     private void CreateTripleVoxel()
     {
-        VoxelData.VoxelType[] voxels =
+        VoxelData.VoxelType[] types =
         {
             // Z = 0
             VoxelData.VoxelType.AIR,
@@ -166,20 +151,12 @@ public class TestGreedyMeshing : MonoBehaviour
             VoxelData.VoxelType.AIR,
         };
         Vector3Int size = new(1, 1, 3);
-        ChunkManager.Instance.ChunkSize = size;
-        GreedyMesherBuffer buffer = GreedyMesherBuffer.Borrow();
-        GreedyMesher.Generate(voxels, size, buffer);
-        Mesh mesh = GreedyMesher.GetMesh(buffer);
-        MeshFilter filter = GetComponent<MeshFilter>();
-        if (filter != null)
-        {
-            filter.sharedMesh = mesh;
-        }
+        DoTest(size, types);
     }
 
     private void CreateDoubleTripleVoxel()
     {
-        VoxelData.VoxelType[] voxels =
+        VoxelData.VoxelType[] types =
         {
             // Z = 0
             VoxelData.VoxelType.AIR,
@@ -248,20 +225,12 @@ public class TestGreedyMeshing : MonoBehaviour
             VoxelData.VoxelType.AIR,
         };
         Vector3Int size = new(2, 1, 3);
-        ChunkManager.Instance.ChunkSize = size;
-        GreedyMesherBuffer buffer = GreedyMesherBuffer.Borrow();
-        GreedyMesher.Generate(voxels, size, buffer);
-        Mesh mesh = GreedyMesher.GetMesh(buffer);
-        MeshFilter filter = GetComponent<MeshFilter>();
-        if (filter != null)
-        {
-            filter.sharedMesh = mesh;
-        }
+        DoTest(size, types);
     }
 
     private void CreateDoubleTripleVoxelWithExtrusion()
     {
-        VoxelData.VoxelType[] voxels =
+        VoxelData.VoxelType[] types =
         {
             // Z = 0
             VoxelData.VoxelType.AIR,
@@ -350,20 +319,12 @@ public class TestGreedyMeshing : MonoBehaviour
             VoxelData.VoxelType.AIR,
         };
         Vector3Int size = new(2, 2, 3);
-        ChunkManager.Instance.ChunkSize = size;
-        GreedyMesherBuffer buffer = GreedyMesherBuffer.Borrow();
-        GreedyMesher.Generate(voxels, size, buffer);
-        Mesh mesh = GreedyMesher.GetMesh(buffer);
-        MeshFilter filter = GetComponent<MeshFilter>();
-        if (filter != null)
-        {
-            filter.sharedMesh = mesh;
-        }
+        DoTest(size, types);
     }
 
     private void CreateDoubleTripleVoxelWithExtrusionAndIsland()
     {
-        VoxelData.VoxelType[] voxels =
+        VoxelData.VoxelType[] types =
         {
             // Z = 0
             VoxelData.VoxelType.AIR,
@@ -493,15 +454,7 @@ public class TestGreedyMeshing : MonoBehaviour
             VoxelData.VoxelType.AIR,
         };
         Vector3Int size = new(3, 2, 4);
-        ChunkManager.Instance.ChunkSize = size;
-        GreedyMesherBuffer buffer = GreedyMesherBuffer.Borrow();
-        GreedyMesher.Generate(voxels, size, buffer);
-        Mesh mesh = GreedyMesher.GetMesh(buffer);
-        MeshFilter filter = GetComponent<MeshFilter>();
-        if (filter != null)
-        {
-            filter.sharedMesh = mesh;
-        }
+        DoTest(size, types);
     }
 
     private void CreateGiantVoxel()
@@ -517,15 +470,7 @@ public class TestGreedyMeshing : MonoBehaviour
             types[i] = VoxelData.VoxelType.DIRT;
         }
         Vector3Int size = new(n, n, n);
-        ChunkManager.Instance.ChunkSize = size;
-        GreedyMesherBuffer buffer = GreedyMesherBuffer.Borrow();
-        GreedyMesher.Generate(types, size, buffer);
-        Mesh mesh = GreedyMesher.GetMesh(buffer);
-        MeshFilter filter = GetComponent<MeshFilter>();
-        if (filter != null)
-        {
-            filter.sharedMesh = mesh;
-        }
+        DoTest(size, types);
     }
 
     private void CreateCheckerChunk()
@@ -551,15 +496,7 @@ public class TestGreedyMeshing : MonoBehaviour
                 : solidType;
         }
         Vector3Int size = new(n, n, n);
-        ChunkManager.Instance.ChunkSize = size;
-        GreedyMesherBuffer buffer = GreedyMesherBuffer.Borrow();
-        GreedyMesher.Generate(types, size, buffer);
-        Mesh mesh = GreedyMesher.GetMesh(buffer);
-        MeshFilter filter = GetComponent<MeshFilter>();
-        if (filter != null)
-        {
-            filter.sharedMesh = mesh;
-        }
+        DoTest(size, types);
     }
 
     private void CreateChunk()
@@ -591,19 +528,40 @@ public class TestGreedyMeshing : MonoBehaviour
             types[i] = type;
         }
         Vector3Int size = new(n, n, n);
-        ChunkManager.Instance.ChunkSize = size;
-        GreedyMesherBuffer buffer = GreedyMesherBuffer.Borrow();
-        GreedyMesher.Generate(types, size, buffer);
-        Mesh mesh = GreedyMesher.GetMesh(buffer);
-        MeshFilter filter = GetComponent<MeshFilter>();
-        if (filter != null)
-        {
-            filter.sharedMesh = mesh;
-        }
+        DoTest(size, types);
     }
 
     private void Start()
     {
+        _greedyMesherBufferPool = new Pool<GreedyMesherBuffer>(
+            () => new GreedyMesherBuffer(),
+            1
+          );
         CreateChunk();
     }
+
+    private void DoTest(Vector3Int size, VoxelData.VoxelType[] types)
+    {
+        GreedyMesherBuffer buffer = _greedyMesherBufferPool.Borrow();
+        try
+        {
+            ChunkConfig.Init(size);
+            GreedyMesher.Generate(types, buffer);
+            Mesh mesh = GreedyMesher.GetMesh(buffer);
+            MeshFilter filter = GetComponent<MeshFilter>();
+            if (filter != null)
+            {
+                filter.sharedMesh = mesh;
+            }
+        }
+        finally
+        {
+            if (buffer != null)
+            {
+                _greedyMesherBufferPool.Return(buffer);
+            }
+        }
+    }
+
+    private Pool<GreedyMesherBuffer> _greedyMesherBufferPool;
 }

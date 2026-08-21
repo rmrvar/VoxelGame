@@ -9,14 +9,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7324027478302872880}
-  - component: {fileID: 6746295407634173444}
+  - component: {fileID: 353645850060703695}
   - component: {fileID: 6851497633203371190}
   - component: {fileID: 5445189931858366539}
   - component: {fileID: 6441873991963146351}
   m_Layer: 6
-  m_Name: Chunk
+  m_Name: ChunkMono
   m_TagString: Untagged
-  m_Icon: {fileID: 0}
+  m_Icon: {fileID: 6519382022992737161, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -35,7 +35,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6746295407634173444
+--- !u!114 &353645850060703695
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -44,11 +44,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 7324027478302872881}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 28d908bba5e2eba4589ec7411754ad9d, type: 3}
+  m_Script: {fileID: 11500000, guid: 192c52330d103854b8577a1fd5201b46, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  _meshFilter: {fileID: 6851497633203371190}
-  _meshCollider: {fileID: 6441873991963146351}
+  m_EditorClassIdentifier: Assembly-CSharp::VoxelGame.Terrain.ChunkMono
 --- !u!33 &6851497633203371190
 MeshFilter:
   m_ObjectHideFlags: 0

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Priority_Queue;
 
 namespace VoxelGame.Terrain.ChunkTask
@@ -16,15 +17,16 @@ namespace VoxelGame.Terrain.ChunkTask
         public void Update(float deltaTime)
         {
             _executeCountdown -= deltaTime;
+            if (_executeCountdown > 0)
+            {
+                return; // Wait for the next execute time.
+            }
+
+            FlushPendingTasks();
 
             if (_chunkTasks.Count <= 0)
             {
                 return; // Nothing to do.
-            }
-
-            if (_executeCountdown > 0)
-            {
-                return; // Wait for the next execute time.
             }
 
             // Find the next task that needs a worker, skipping cancelled tasks and completing lazy tasks immediately.
@@ -61,7 +63,8 @@ namespace VoxelGame.Terrain.ChunkTask
 
         public void Schedule(ChunkTask task, float priority)
         {
-            _chunkTasks.Enqueue(task, priority);
+            task.Priority = priority;
+            _pendingTasks.Add(task);
         }
 
         public void Interrupt(ChunkTask task)
@@ -79,6 +82,16 @@ namespace VoxelGame.Terrain.ChunkTask
             --_numActiveTasks;
         }
 
+        private void FlushPendingTasks()
+        {
+            foreach (var pendingTask in _pendingTasks)
+            {
+                _chunkTasks.Enqueue(pendingTask, pendingTask.Priority);
+            }
+            _pendingTasks.Clear();
+        }
+
+        private readonly List<ChunkTask> _pendingTasks = new(1000);
         private readonly FastPriorityQueue<ChunkTask> _chunkTasks = new(10000);
 
         private readonly int _maxActiveTasks;
