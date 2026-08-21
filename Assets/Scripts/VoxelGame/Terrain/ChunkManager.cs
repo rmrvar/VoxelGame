@@ -122,6 +122,8 @@ namespace VoxelGame.Terrain
 #endif
 			Instance = this;
 
+            Application.targetFrameRate = 60;
+
             Random.InitState(_seed);
             BiomeLogic.Init();
 			ChunkConfig.Init(_chunkSize);

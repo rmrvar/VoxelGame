@@ -674,7 +674,7 @@ MonoBehaviour:
   _chunkSize: {x: 32, y: 32, z: 32}
   _loadOrigin: {fileID: 1828581181}
   _loadRadiusXZ: 300
-  _loadRadiusY: 100
+  _loadRadiusY: 50
   _collisionRadius: 64
   _chunkRefreshCooldown: 0.5
   _maxActiveTasks: 4

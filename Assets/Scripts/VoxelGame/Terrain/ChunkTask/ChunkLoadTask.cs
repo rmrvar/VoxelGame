@@ -55,6 +55,8 @@ namespace VoxelGame.Terrain.ChunkTask
         {
             Vector3Int chunkPosition = input.Position;
 
+            // TODO: These have to take into account the neighboring strip of cells. Because a voxel underneath a
+            // cliff is visible even if it is completely beneath the cliff.
             int minHeight = int.MaxValue;
             int maxHeight = int.MinValue;
 

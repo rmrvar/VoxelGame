@@ -70,12 +70,12 @@ namespace VoxelGame.Terrain.ChunkTask
         private void CopyVoxels(VoxelType[] destination)
         {
             CopyInterior(destination, Chunk);
-            FillFace(destination, Chunk.PosX, 0, 1);
-            FillFace(destination, Chunk.PosY, 1, 1);
-            FillFace(destination, Chunk.PosZ, 2, 1);
-            FillFace(destination, Chunk.NegX, 0, 0);
-            FillFace(destination, Chunk.NegY, 1, 0);
-            FillFace(destination, Chunk.NegZ, 2, 0);
+            FillFace(destination, Chunk.PosX, 0, 0);
+            FillFace(destination, Chunk.PosY, 1, 0);
+            FillFace(destination, Chunk.PosZ, 2, 0);
+            FillFace(destination, Chunk.NegX, 0, 1);
+            FillFace(destination, Chunk.NegY, 1, 1);
+            FillFace(destination, Chunk.NegZ, 2, 1);
         }
 
         private void CopyInterior(
@@ -163,7 +163,7 @@ namespace VoxelGame.Terrain.ChunkTask
         }
 
         // Fills the specified border face of flat 3D array <destination> with <value>.
-        // <axis> specifies the face axis and <sign> its direction: 0 for negative, 1 for positive.
+        // <axis> specifies the face axis and <sign> its direction: 1 for negative, 0 for positive.
         private void FillFace(
             VoxelType[] destination,
             VoxelType value,
@@ -178,8 +178,8 @@ namespace VoxelGame.Terrain.ChunkTask
                 case 0:
                 {
                     int dstX = sign == 0 
-                        ? 0 
-                        : size.x + 1;
+                        ? size.x + 1
+                        : 0;
 
                     for (int z = 0; z < size.z; ++z)
                     for (int y = 0; y < size.y; ++y)
@@ -196,8 +196,8 @@ namespace VoxelGame.Terrain.ChunkTask
                 case 1:
                 {
                     int dstY = sign == 0 
-                        ? 0 
-                        : size.y + 1;
+                        ? size.y + 1
+                        : 0;
 
                     for (int z = 0; z < size.z; ++z)
                     {
@@ -209,7 +209,7 @@ namespace VoxelGame.Terrain.ChunkTask
                             destination,
                             value,
                             dstIndex,
-                            ChunkConfig.PStrideY
+                            ChunkConfig.StrideY
                           );
                     }
 
@@ -219,8 +219,8 @@ namespace VoxelGame.Terrain.ChunkTask
                 {
                     // Also fills the border edges, which are not needed but avoids multiple fill operations.
                     int dstZ = sign == 0 
-                        ? 0 
-                        : size.z + 1;
+                        ? size.z + 1
+                        : 0;
 
                     int dstIndex = dstZ * ChunkConfig.PStrideZ;
 
@@ -237,7 +237,7 @@ namespace VoxelGame.Terrain.ChunkTask
         }
 
         // Fills the specified border face of flat 3D array <destination> with values copied from the opposite border face of flat 3D array <source>.
-        // <axis> specifies the face axis and <sign> its direction: 0 for negative, 1 for positive.
+        // <axis> specifies the face axis and <sign> its direction: 1 for negative, 0 for positive.
         // <destination> is padded by one voxel on each side, while <source> is sized according to <size>.
         private void CopyFace(
             VoxelType[] destination,
@@ -256,8 +256,8 @@ namespace VoxelGame.Terrain.ChunkTask
                         : ChunkConfig.SizeX - 1;
 
                     int dstX = sign == 0
-                        ? 0
-                        : ChunkConfig.SizeX + 1;
+                        ? ChunkConfig.SizeX + 1
+                        : 0;
 
                     for (int z = 0; z < ChunkConfig.SizeZ; ++z)
                     for (int y = 0; y < ChunkConfig.SizeY; ++y)
@@ -282,8 +282,8 @@ namespace VoxelGame.Terrain.ChunkTask
                         : ChunkConfig.SizeY - 1;
 
                     int dstY = sign == 0
-                        ? 0
-                        : ChunkConfig.SizeY + 1;
+                        ? ChunkConfig.SizeY + 1
+                        : 0;
 
                     for (int z = 0; z < ChunkConfig.SizeZ; ++z)
                     {
@@ -299,7 +299,7 @@ namespace VoxelGame.Terrain.ChunkTask
                             srcIndex,
                             destination,
                             dstIndex,
-                            ChunkConfig.SizeX
+                            ChunkConfig.StrideY
                           );
                     }
 
@@ -313,8 +313,8 @@ namespace VoxelGame.Terrain.ChunkTask
                         : ChunkConfig.SizeZ - 1;
 
                     int dstZ = sign == 0
-                        ? 0
-                        : ChunkConfig.SizeZ + 1;
+                        ? ChunkConfig.SizeZ + 1
+                        : 0;
 
                     for (int y = 0; y < ChunkConfig.SizeY; ++y)
                     {
@@ -330,7 +330,7 @@ namespace VoxelGame.Terrain.ChunkTask
                             srcIndex,
                             destination,
                             dstIndex,
-                            ChunkConfig.SizeX
+                            ChunkConfig.StrideY
                           );
                     }
 

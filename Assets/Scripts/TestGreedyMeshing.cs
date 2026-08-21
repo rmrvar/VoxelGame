@@ -542,10 +542,10 @@ public class TestGreedyMeshing : MonoBehaviour
 
     private void DoTest(Vector3Int size, VoxelData.VoxelType[] types)
     {
+        ChunkConfig.Init(size);
         GreedyMesherBuffer buffer = _greedyMesherBufferPool.Borrow();
         try
         {
-            ChunkConfig.Init(size);
             GreedyMesher.Generate(types, buffer);
             Mesh mesh = GreedyMesher.GetMesh(buffer);
             MeshFilter filter = GetComponent<MeshFilter>();
