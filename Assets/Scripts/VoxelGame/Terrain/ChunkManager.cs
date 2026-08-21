@@ -3,6 +3,7 @@ using UnityEngine;
 using VoxelGame.Pooling;
 using VoxelGame.Terrain.ChunkTask;
 using VoxelGame.Terrain.Meshing;
+using static UnityEngine.UI.Image;
 
 namespace VoxelGame.Terrain
 {
@@ -155,12 +156,20 @@ namespace VoxelGame.Terrain
 
 		private void Update()
 		{
+            _currChunkId = GetChunkId(_loadOrigin.position);
+            if (_currChunkId != _prevChunkId)
+            {
+                _scheduler.Reprioritize(GetChunkPriority);
+            }
+
 			_scheduler.Update(Time.deltaTime);
-		    
+
             RefillPools();
 
             LoadChunks();
-		}
+
+            _prevChunkId = _currChunkId;
+        }
 
         private void RefillPools()
         {
@@ -194,7 +203,6 @@ namespace VoxelGame.Terrain
         private void ShowChunksWithinView()
         {
             Vector3 origin = _loadOrigin.position;
-            Vector3Int originChunkId = GetChunkId(origin);
 
             for (int z = -_ratioZ; z <= _ratioZ; ++z)
             for (int y = -_ratioY; y <= _ratioY; ++y)
@@ -203,7 +211,7 @@ namespace VoxelGame.Terrain
 
                 _neighborX = null;
 
-                Vector3Int chunkId = originChunkId + new Vector3Int(-_ratioX, y, z);
+                Vector3Int chunkId = _currChunkId + new Vector3Int(-_ratioX, y, z);
                 Vector3 chunkPos = new(
                     (chunkId.x + 0.5F) * ChunkConfig.SizeX,
                     (chunkId.y + 0.5F) * ChunkConfig.SizeY,
@@ -262,12 +270,7 @@ namespace VoxelGame.Terrain
 
         private float GetChunkPriority(Chunk chunk)
         {
-            Vector3 chunkPos = new(
-                (chunk.Id.x + 0.5F) * ChunkConfig.SizeX,
-                (chunk.Id.y + 0.5F) * ChunkConfig.SizeY,
-                (chunk.Id.z + 0.5F) * ChunkConfig.SizeZ
-              );
-            return (chunkPos - _loadOrigin.position).sqrMagnitude;
+            return (chunk.Center - _loadOrigin.position).sqrMagnitude;
         }
 
         private float _collisionRadiusSqr;
@@ -288,5 +291,8 @@ namespace VoxelGame.Terrain
 
         private float _chunkMonoPoolRefillTimer;
         private float _chunkMonoPoolRefillCooldown;
+
+        private Vector3Int _currChunkId;
+        private Vector3Int _prevChunkId;
     }
 }

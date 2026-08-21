@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using Priority_Queue;
+using UnityEngine;
 
 namespace VoxelGame.Terrain.ChunkTask
 {
@@ -70,6 +72,12 @@ namespace VoxelGame.Terrain.ChunkTask
         public void Interrupt(ChunkTask task)
         {
             _ = task.ExecuteAsync();
+        }
+
+        public void Reprioritize(Func<Chunk, float> getPriority)
+        {
+            Debug.Assert(getPriority != null);
+            _chunkTasks.RefreshPriorities(chunkTask => getPriority(chunkTask.Chunk));
         }
 
         private void OnTaskStarted()

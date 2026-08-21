@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace Priority_Queue
 {
@@ -96,6 +97,21 @@ namespace Priority_Queue
 #endif
 
             return (_nodes[node.QueueIndex] == node);
+        }
+
+        public void RefreshPriorities(Func<T, float> getPriority)
+        {
+            Debug.Assert(getPriority != null);
+
+            for (int i = 1; i <= _numNodes; i++)
+            {
+                _nodes[i].Priority = getPriority(_nodes[i]);
+            }
+
+            for (int i = _numNodes / 2; i >= 1; i--)
+            {
+                CascadeDown(_nodes[i]);
+            }
         }
 
         /// <summary>

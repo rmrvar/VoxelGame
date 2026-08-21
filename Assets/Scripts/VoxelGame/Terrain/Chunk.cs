@@ -13,7 +13,9 @@ namespace VoxelGame.Terrain
         
         public int VoxelVersion { get; set; } = -1;
 
-        public Vector3Int Position { get; private set; }
+        public Vector3Int Position { get; }
+
+        public Vector3 Center { get; }
         
         public Vector3Int Id { get; private set; }
 
@@ -36,6 +38,11 @@ namespace VoxelGame.Terrain
                 id.x * ChunkConfig.SizeX,
                 id.y * ChunkConfig.SizeY,
                 id.z * ChunkConfig.SizeZ
+              );
+            Center = new(
+                (Id.x + 0.5F) * ChunkConfig.SizeX,
+                (Id.y + 0.5F) * ChunkConfig.SizeY,
+                (Id.z + 0.5F) * ChunkConfig.SizeZ
               );
         }
 
