@@ -142,11 +142,11 @@ namespace VoxelGame.Terrain.ChunkTask
                     sign
                   );
             } else
-            if (neighbor.IsMaterializedMonotype(out VoxelType uniform))
+            if (neighbor.IsMaterializedMonotype(out VoxelType monotype))
             {
                 FillFace(
                     destination, 
-                    uniform, 
+                    monotype, 
                     axis, 
                     sign
                   );

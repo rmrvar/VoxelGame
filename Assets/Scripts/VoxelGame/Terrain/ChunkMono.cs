@@ -24,13 +24,11 @@ namespace VoxelGame.Terrain
 
         public void Refresh()
         {
-            _meshCollider.sharedMesh = null;
             _meshCollider.sharedMesh = Mesh;
         }
 
         public void OnBorrowed()
         {
-            Mesh.Clear();
             _meshRenderer.enabled = false;
             _meshCollider.enabled = false;
 

@@ -25,8 +25,9 @@ namespace VoxelGame.Terrain.Meshing
             GreedyQuads = new Quad[maxDimension * maxDimension];
             TopQuadIndices = new int[maxDimension];
 
-            // For initial buffer list sizes, use superflat world.
-            int initialListSize = chunkSize.x * chunkSize.z * 4;
+            // For initial buffer list sizes, use N times superflat world.
+            int N = 5;
+            int initialListSize = (chunkSize.x * chunkSize.z * 4) * N;
             Vertices = new List<Vector3>(initialListSize);
             UVs = new List<Vector3>(initialListSize);
             Normals = new List<Vector3>(initialListSize);

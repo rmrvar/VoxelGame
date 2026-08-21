@@ -227,6 +227,7 @@ namespace VoxelGame.Terrain.Meshing
             mesh.SetNormals(buffer.Normals);
             mesh.SetUVs(0, buffer.UVs);
             mesh.SetIndices(buffer.Quads, MeshTopology.Quads, 0);
+            mesh.RecalculateBounds(); // TODO: Investigate the necessity of this.
             return mesh;
         }
 
