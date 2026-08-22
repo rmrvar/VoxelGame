@@ -26,7 +26,9 @@ namespace VoxelGame.Terrain.ChunkTask
 
         public override bool TryLazyExecute()
         {
-            return Chunk.IsMaterializedMonotype(out VoxelType voxelData) && voxelData == VoxelType.AIR;
+            bool isMaterializedEmpty =
+                Chunk.IsMaterializedMonotype(out VoxelType voxelData) && voxelData == VoxelType.AIR;
+            return isMaterializedEmpty;
         }
 
         protected override ChunkMeshTaskIn PrepareInput()
@@ -47,10 +49,12 @@ namespace VoxelGame.Terrain.ChunkTask
 
         protected override void HandleOutput(ChunkMeshTaskOut output, Exception exception)
         {
+            Debug.Assert(exception == null);
             if (exception != null)
             {
                 return;
             }
+
             if (Chunk.MeshVersion >= MeshVersion)
             {
                 return;

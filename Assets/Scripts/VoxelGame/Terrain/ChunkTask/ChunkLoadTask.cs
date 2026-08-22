@@ -32,14 +32,14 @@ namespace VoxelGame.Terrain.ChunkTask
             if (maxHeight < minChunkY)
             {
                 Chunk.InitUnmaterializedEmpty();
-                FinishLoad(isMaterialized: false);
+                FinishLoading();
                 return true;
             }
 
             if (minHeight > maxChunkY)
             {
                 Chunk.InitUnmaterializedSolid(); 
-                FinishLoad(isMaterialized: false);
+                FinishLoading();
                 return true;
             }
 
@@ -119,6 +119,7 @@ namespace VoxelGame.Terrain.ChunkTask
 
         protected override void HandleOutput(ChunkLoadTaskOut output, Exception exception)
         {
+            Debug.Assert(exception == null);
             if (exception != null)
             {
                 return; // Something went wrong.
@@ -136,44 +137,47 @@ namespace VoxelGame.Terrain.ChunkTask
                 output.Input.PolytypeChunkData = null; // This transfers ownership to Chunk.
             }
 
-            FinishLoad(isMaterialized: true);
+            FinishLoading();
         }
 
-        private void FinishLoad(bool isMaterialized)
+        private void FinishLoading()
         {
             Chunk.MarkLoaded();
 
-            NotifyNeighbor(Chunk.PosX, 3);
-            NotifyNeighbor(Chunk.PosY, 4);
-            NotifyNeighbor(Chunk.PosZ, 5);
-            NotifyNeighbor(Chunk.NegX, 0);
-            NotifyNeighbor(Chunk.NegY, 1);
-            NotifyNeighbor(Chunk.NegZ, 2);
+            SyncLoadedNeighborBits(Chunk, Chunk.PosX, 0, 3);
+            SyncLoadedNeighborBits(Chunk, Chunk.PosY, 1, 4);
+            SyncLoadedNeighborBits(Chunk, Chunk.PosZ, 2, 5);
+            SyncLoadedNeighborBits(Chunk, Chunk.NegX, 3, 0);
+            SyncLoadedNeighborBits(Chunk, Chunk.NegY, 4, 1);
+            SyncLoadedNeighborBits(Chunk, Chunk.NegZ, 5, 2);
 
-            if (isMaterialized && IsNeighborhoodLoaded(Chunk))
-            {
-                ChunkManager.Instance.ScheduleMeshTask(Chunk);
-            }
+            TryToScheduleChunkMeshTask(Chunk);
         }
 
-        private static void NotifyNeighbor(Chunk neighbor, int faceIndex)
+        private static void SyncLoadedNeighborBits(
+            Chunk thisChunk,
+            Chunk thatChunk, 
+            int thisFaceIndex, 
+            int thatFaceIndex
+          )
         {
-            if (neighbor == null)
+            if (thatChunk == null)
             {
                 return;
             }
 
-            neighbor.SetLoadedNeighborBit(faceIndex, true);
+            thisChunk.SetLoadedNeighborBit(thisFaceIndex, thatChunk.IsLoaded);
+            thatChunk.SetLoadedNeighborBit(thatFaceIndex, true);
 
-            if (neighbor.IsLoaded && neighbor.IsMaterialized && IsNeighborhoodLoaded(neighbor))
-            {
-                ChunkManager.Instance.ScheduleMeshTask(neighbor);
-            }
+            TryToScheduleChunkMeshTask(thatChunk);
         }
 
-        private static bool IsNeighborhoodLoaded(Chunk chunk)
+        private static void TryToScheduleChunkMeshTask(Chunk chunk)
         {
-            return chunk.LoadedNeighborMask == 0b111111;
+            if (chunk.IsLoaded && chunk.IsMaterialized && chunk.LoadedNeighborMask == 0b111111)
+            {
+                ChunkManager.Instance.ScheduleMeshTask(chunk);
+            }
         }
     }
 

@@ -3,7 +3,6 @@ using UnityEngine;
 using VoxelGame.Pooling;
 using VoxelGame.Terrain.ChunkTask;
 using VoxelGame.Terrain.Meshing;
-using static UnityEngine.UI.Image;
 
 namespace VoxelGame.Terrain
 {
@@ -202,8 +201,6 @@ namespace VoxelGame.Terrain
 
         private void ShowChunksWithinView()
         {
-            Vector3 origin = _loadOrigin.position;
-
             for (int z = -_ratioZ; z <= _ratioZ; ++z)
             for (int y = -_ratioY; y <= _ratioY; ++y)
             {
@@ -212,23 +209,17 @@ namespace VoxelGame.Terrain
                 _neighborX = null;
 
                 Vector3Int chunkId = _currChunkId + new Vector3Int(-_ratioX, y, z);
-                Vector3 chunkPos = new(
-                    (chunkId.x + 0.5F) * ChunkConfig.SizeX,
-                    (chunkId.y + 0.5F) * ChunkConfig.SizeY,
-                    (chunkId.z + 0.5F) * ChunkConfig.SizeZ
-                  );
 
                 for (int x = -_ratioX; x <= _ratioX; ++x)
                 {
                     int ix = x + _ratioX;
 
-                    float sqrDistance = (chunkPos - origin).sqrMagnitude;
-                    bool shouldCollide = sqrDistance <= _collisionRadiusSqr;
-
                     if (_chunks.TryGetValue(chunkId, out var chunk))
                     {
                         if (chunk.Mono != null)
                         {
+                            float sqrDistance = (chunk.Center - _loadOrigin.position).sqrMagnitude;
+                            bool shouldCollide = sqrDistance <= _collisionRadiusSqr;
                             chunk.Mono.CanCollide = shouldCollide;
                         }
                     }
@@ -263,7 +254,6 @@ namespace VoxelGame.Terrain
                     _neighborZ[iy, ix] = chunk;
 
                     ++chunkId.x;
-                    chunkPos.x += ChunkConfig.SizeX;
                 }
             }
         }

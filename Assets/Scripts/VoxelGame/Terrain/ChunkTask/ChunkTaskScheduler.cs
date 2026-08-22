@@ -14,8 +14,6 @@ namespace VoxelGame.Terrain.ChunkTask
             _executeCountdown = _timeBetweenExecutes;
         }
 
-        public int NumScheduledTasks => _chunkTasks.Count;
-
         public void Update(float deltaTime)
         {
             _executeCountdown -= deltaTime;
@@ -77,6 +75,10 @@ namespace VoxelGame.Terrain.ChunkTask
         public void Reprioritize(Func<Chunk, float> getPriority)
         {
             Debug.Assert(getPriority != null);
+            foreach (ChunkTask chunkTask in _pendingTasks)
+            {
+                chunkTask.Priority = getPriority(chunkTask.Chunk);
+            }
             _chunkTasks.RefreshPriorities(chunkTask => getPriority(chunkTask.Chunk));
         }
 
@@ -100,7 +102,7 @@ namespace VoxelGame.Terrain.ChunkTask
         }
 
         private readonly List<ChunkTask> _pendingTasks = new(1000);
-        private readonly FastPriorityQueue<ChunkTask> _chunkTasks = new(10000);
+        private readonly FastPriorityQueue<ChunkTask> _chunkTasks = new(20000);
 
         private readonly int _maxActiveTasks;
         private readonly float _timeBetweenExecutes;

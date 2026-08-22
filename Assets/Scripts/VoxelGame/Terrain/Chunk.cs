@@ -39,7 +39,7 @@ namespace VoxelGame.Terrain
                 id.y * ChunkConfig.SizeY,
                 id.z * ChunkConfig.SizeZ
               );
-            Center = new(
+            Center = new Vector3(
                 (Id.x + 0.5F) * ChunkConfig.SizeX,
                 (Id.y + 0.5F) * ChunkConfig.SizeY,
                 (Id.z + 0.5F) * ChunkConfig.SizeZ
@@ -133,6 +133,9 @@ namespace VoxelGame.Terrain
             Debug.Assert(Mono == null);
             Mono = ChunkManager.Instance.ChunkMonoPool.Borrow();
             Mono.transform.position = Position;
+#if UNITY_EDITOR
+            Mono.gameObject.name = Id.ToString();
+#endif
         }
 
         // TODO: Hook up when start unloading chunks.
