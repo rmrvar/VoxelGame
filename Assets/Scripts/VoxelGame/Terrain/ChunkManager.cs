@@ -30,13 +30,14 @@ namespace VoxelGame.Terrain
         private int _maxActiveTasks = 8;
         [SerializeField]
         private int _maxTaskExecutesPerSecond = 8;
+        [SerializeField]
+        private int _maxLazyExecutesPerFrame = 50;
 
         [SerializeField]
         private ChunkMono _chunkMonoPrefab;
 
         [SerializeField]
         private int _chunkMonoPoolRefillThreshold = 1000;
-
         [SerializeField]
         private int _chunkMonoPoolRefillRate = 20;
 
@@ -86,6 +87,21 @@ namespace VoxelGame.Terrain
         public void ScheduleImmediateMaterializePolytypeTask(Chunk chunk)
         {
             // TODO
+        }
+
+        public void MarkChunkIdDirty(Vector3Int chunkId)
+        {
+            _dirtyChunkIds.Add(chunkId);
+        }
+
+        public void MarkChunkIdClean(Vector3Int chunkId)
+        {
+            _dirtyChunkIds.Remove(chunkId);
+        }
+
+        public bool IsChunkIdDirty(Vector3Int chunkId)
+        {
+            return _dirtyChunkIds.Contains(chunkId);
         }
 
         public bool GetChunkHeightRange(Vector3Int id, out int minHeight, out int maxHeight)
@@ -155,7 +171,7 @@ namespace VoxelGame.Terrain
             _neighborY = new Chunk[sizeX];
             _neighborZ = new Chunk[sizeY, sizeX];
 
-            _scheduler = new ChunkTaskScheduler(_maxActiveTasks, _maxTaskExecutesPerSecond);
+            _scheduler = new ChunkTaskScheduler(_maxActiveTasks, _maxTaskExecutesPerSecond, _maxLazyExecutesPerFrame);
 
             ChunkMonoPool = new Pool<ChunkMono>(
                 () => Instantiate(_chunkMonoPrefab, transform),
@@ -289,8 +305,9 @@ namespace VoxelGame.Terrain
         private Chunk[] _neighborY;
         private Chunk[,] _neighborZ;
 
-        private readonly Dictionary<Vector3Int, Chunk> _chunks = new();
-        private readonly Dictionary<Vector2Int, Vector2Int> _chunkIdXZToHeightRange = new();
+        private readonly HashSet<Vector3Int> _dirtyChunkIds = new(100);
+        private readonly Dictionary<Vector3Int, Chunk> _chunks = new(10000);
+        private readonly Dictionary<Vector2Int, Vector2Int> _chunkIdXZToHeightRange = new(1000);
 		private float _chunkRefreshTimer;
 
         private ChunkTaskScheduler _scheduler;

@@ -25,6 +25,10 @@ namespace VoxelGame.Terrain.ChunkTask
             }
 
             // TODO: Return false if ChunkManager.Instance.SaveSystem has an entry for this chunk ID (includes if neighbor made change on border).
+            if (ChunkManager.Instance.IsChunkIdDirty(Chunk.Id))
+            {
+                return false;
+            }
 
             // Check if there is no visible face in this chunk, so we can skip materializing it until needed.
             float minChunkY = Chunk.Position.y;
@@ -126,6 +130,7 @@ namespace VoxelGame.Terrain.ChunkTask
             }
 
             ChunkManager.Instance.SetChunkHeightRange(Chunk.Id, output.MinHeight, output.MaxHeight);
+            ChunkManager.Instance.MarkChunkIdClean(Chunk.Id);
 
             if (output.IsMonotype)
             {

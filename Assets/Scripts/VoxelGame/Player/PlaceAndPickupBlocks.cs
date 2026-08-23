@@ -75,21 +75,29 @@ namespace VoxelGame
 
                 foreach (Vector3Int neighborPosition in GetNeighboringPositions(posToAffect))
                 {
-                    Chunk neighborChunk = ChunkManager.Instance.GetChunkByPos(neighborPosition);
-                    if (neighborChunk == null)
-                    {
-                        continue; // TODO: This is a potentially very problematic but very rare problem if the neighboring chunk doesn't exist yet.
-                    }
+                    Vector3Int neighborChunkId = ChunkManager.Instance.GetChunkId(neighborPosition);
+
+                    Chunk neighborChunk = ChunkManager.Instance.GetChunkById(neighborChunkId);
                     if (neighborChunk == chunkToAffect)
                     {
                         continue; // We have already meshed this chunk.
                     }
+
+                    ChunkManager.Instance.MarkChunkIdDirty(neighborChunkId);
+
+                    if (neighborChunk == null)
+                    {
+                        // Only happens with really fast player and unloading, but shouldn't be an issue with dirtiness.
+                        continue;
+                    }
+
                     if (!neighborChunk.IsMaterialized)
                     {
                         ChunkManager.Instance.ScheduleImmediateMaterializePolytypeTask(neighborChunk);
                     }
-                    ++neighborChunk.VoxelVersion;
                     ChunkManager.Instance.ScheduleImmediateMeshTask(neighborChunk);
+
+                    ChunkManager.Instance.MarkChunkIdClean(neighborChunkId);
                 }
 
 				//if (placeOrPickup)

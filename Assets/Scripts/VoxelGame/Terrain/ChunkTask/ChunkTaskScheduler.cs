@@ -7,11 +7,12 @@ namespace VoxelGame.Terrain.ChunkTask
 {
     public class ChunkTaskScheduler
     {
-        public ChunkTaskScheduler(int maxActiveTasks, int maxExecutesPerSecond)
+        public ChunkTaskScheduler(int maxActiveTasks, int maxExecutesPerSecond, int maxLazyExecutesPerFrame)
         {
             _maxActiveTasks = maxActiveTasks;
             _timeBetweenExecutes = 1 / (float)maxExecutesPerSecond;
             _executeCountdown = _timeBetweenExecutes;
+            _maxLazyExecutesPerFrame = maxLazyExecutesPerFrame;
         }
 
         public void Update(float deltaTime)
@@ -30,6 +31,7 @@ namespace VoxelGame.Terrain.ChunkTask
             }
 
             // Find the next task that needs a worker, skipping cancelled tasks and completing lazy tasks immediately.
+            int numLazyExecutes = 0;
             while (_chunkTasks.Count > 0)
             {
                 ChunkTask task = _chunkTasks.First;
@@ -42,9 +44,16 @@ namespace VoxelGame.Terrain.ChunkTask
 
                 if (task.TryLazyExecute())
                 {
-                    // TODO: Consider limiting this to _maxLazyExecutesPerFrame.
                     _chunkTasks.Dequeue();
-                    continue;
+                    ++numLazyExecutes;
+                    if (numLazyExecutes >= _maxLazyExecutesPerFrame)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
 
                 if (_numActiveTasks >= _maxActiveTasks)
@@ -106,6 +115,7 @@ namespace VoxelGame.Terrain.ChunkTask
 
         private readonly int _maxActiveTasks;
         private readonly float _timeBetweenExecutes;
+        private readonly int _maxLazyExecutesPerFrame;
         private float _executeCountdown;
         private int _numActiveTasks;
     }
