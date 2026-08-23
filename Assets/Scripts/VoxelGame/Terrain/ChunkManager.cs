@@ -72,6 +72,22 @@ namespace VoxelGame.Terrain
               );
         }
 
+        public void ScheduleImmediateMeshTask(Chunk chunk)
+        {
+            _scheduler.Interrupt(
+                new ChunkMeshTask(
+                    chunk,
+                    chunk.GetCancellationToken(),
+                    shouldRunInBackground: false
+                )
+            );
+        }
+
+        public void ScheduleImmediateMaterializePolytypeTask(Chunk chunk)
+        {
+            // TODO
+        }
+
         public bool GetChunkHeightRange(Vector3Int id, out int minHeight, out int maxHeight)
         {
             Vector2Int id2 = new(id.x, id.z);

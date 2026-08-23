@@ -46,6 +46,24 @@ namespace VoxelGame.Terrain
               );
         }
 
+        public int GetVoxelIndexFromLocalPosition(Vector3Int position)
+        {
+            Debug.Assert(
+                   position.x >= 0 
+                && position.y >= 0 
+                && position.z >= 0 
+                && position.x < ChunkConfig.SizeX 
+                && position.y < ChunkConfig.SizeY 
+                && position.z < ChunkConfig.SizeZ
+              );
+            return position.x + position.y * ChunkConfig.StrideY + position.z * ChunkConfig.StrideZ;
+        }
+
+        public int GetVoxelIndexFromWorldPosition(Vector3Int position)
+        {
+            return GetVoxelIndexFromLocalPosition(position - Position);
+        }
+
         public CancellationToken GetCancellationToken()
         {
             return _cts.Token;
