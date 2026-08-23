@@ -3,13 +3,14 @@ using UnityEngine;
 using VoxelGame.Pooling;
 using VoxelGame.Terrain.ChunkTask;
 using VoxelGame.Terrain.Meshing;
+using Random = UnityEngine.Random;
 
 namespace VoxelGame.Terrain
 {
 	public class ChunkManager : MonoBehaviour
 	{
 		[SerializeField]
-        private int _seed = 0;
+        private int _seed;
 
         [SerializeField]
         private Vector3Int _chunkSize = new(32, 32, 32);
@@ -228,26 +229,25 @@ namespace VoxelGame.Terrain
                         chunk = new Chunk(chunkId);
                         _chunks.Add(chunkId, chunk);
 
-                        Chunk neighborNegX = x > -_ratioX
-                            ? _neighborX
-                            : null;
-                        Chunk neighborNegY = y > -_ratioY
-                            ? _neighborY[ix]
-                            : null;
-                        Chunk neighborNegZ = z > -_ratioZ
-                            ? _neighborZ[iy, ix]
-                            : null;
-
-                        neighborNegX?.InitNeighbor(chunk, 0);
-                        neighborNegY?.InitNeighbor(chunk, 1);
-                        neighborNegZ?.InitNeighbor(chunk, 2);
-
-                        chunk.InitNeighbor(neighborNegX, 3);
-                        chunk.InitNeighbor(neighborNegY, 4);
-                        chunk.InitNeighbor(neighborNegZ, 5);
-
                         ScheduleLoadTask(chunk);
                     }
+
+                    Chunk neighborNegX = x > -_ratioX
+                        ? _neighborX
+                        : null;
+                    Chunk neighborNegY = y > -_ratioY
+                        ? _neighborY[ix]
+                        : null;
+                    Chunk neighborNegZ = z > -_ratioZ
+                        ? _neighborZ[iy, ix]
+                        : null;
+
+                    neighborNegX?.InitNeighbor(chunk, 0);
+                    neighborNegY?.InitNeighbor(chunk, 1);
+                    neighborNegZ?.InitNeighbor(chunk, 2);
+                    chunk.InitNeighbor(neighborNegX, 3);
+                    chunk.InitNeighbor(neighborNegY, 4);
+                    chunk.InitNeighbor(neighborNegZ, 5);
 
                     _neighborX = chunk;
                     _neighborY[ix] = chunk;

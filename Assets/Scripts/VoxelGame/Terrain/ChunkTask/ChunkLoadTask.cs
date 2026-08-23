@@ -174,10 +174,22 @@ namespace VoxelGame.Terrain.ChunkTask
 
         private static void TryToScheduleChunkMeshTask(Chunk chunk)
         {
-            if (chunk.IsLoaded && chunk.IsMaterialized && chunk.LoadedNeighborMask == 0b111111)
+            if (!chunk.IsLoaded)
             {
-                ChunkManager.Instance.ScheduleMeshTask(chunk);
+                return;
             }
+
+            if (!chunk.IsMaterialized)
+            {
+                return;
+            }
+
+            if (chunk.LoadedNeighborMask != 0b111111)
+            {
+                return;
+            }
+
+            ChunkManager.Instance.ScheduleMeshTask(chunk);
         }
     }
 
