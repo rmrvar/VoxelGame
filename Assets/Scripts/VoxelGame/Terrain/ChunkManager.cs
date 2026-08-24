@@ -80,13 +80,20 @@ namespace VoxelGame.Terrain
                     chunk,
                     chunk.GetCancellationToken(),
                     shouldRunInBackground: false
-                )
-            );
+                  )
+              );
         }
 
-        public void ScheduleImmediateMaterializePolytypeTask(Chunk chunk)
+        public void ScheduleImmediateLoadPolytypeTask(Chunk chunk)
         {
-            // TODO
+            _scheduler.Interrupt(
+                new ChunkLoadTask(
+                    chunk,
+                    chunk.GetCancellationToken(),
+                    shouldRunInBackground: false,
+                    shouldForcePolytype: true
+                  )
+              );
         }
 
         public void MarkChunkIdDirty(Vector3Int chunkId)

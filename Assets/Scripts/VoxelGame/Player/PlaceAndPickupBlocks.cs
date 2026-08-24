@@ -53,7 +53,7 @@ namespace VoxelGame
                 if (!chunkToAffect.IsMaterializedPolytype)
                 {
 					// We need voxels to work with.
-					ChunkManager.Instance.ScheduleImmediateMaterializePolytypeTask(chunkToAffect);
+					ChunkManager.Instance.ScheduleImmediateLoadPolytypeTask(chunkToAffect);
                 }
 
 				DrawCube(posToAffect);
@@ -93,7 +93,7 @@ namespace VoxelGame
 
                     if (!neighborChunk.IsMaterialized)
                     {
-                        ChunkManager.Instance.ScheduleImmediateMaterializePolytypeTask(neighborChunk);
+                        ChunkManager.Instance.ScheduleImmediateLoadPolytypeTask(neighborChunk);
                     }
                     ChunkManager.Instance.ScheduleImmediateMeshTask(neighborChunk);
 

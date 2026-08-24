@@ -11,14 +11,21 @@ namespace VoxelGame.Terrain.ChunkTask
         public ChunkLoadTask(
             Chunk chunk, 
             CancellationToken token,
-            bool shouldRunInBackground = true
+            bool shouldRunInBackground = true,
+            bool shouldForcePolytype = false
           ) 
             : base(chunk, token, shouldRunInBackground)
         {
+            _shouldForcePolytype = shouldForcePolytype;
         }
 
         public override bool TryLazyExecute()
         {
+            if (_shouldForcePolytype)
+            {
+                return false;
+            }
+
             if (!ChunkManager.Instance.GetChunkHeightRange(Chunk.Id, out int minHeight, out int maxHeight))
             {
                 return false;
@@ -132,7 +139,7 @@ namespace VoxelGame.Terrain.ChunkTask
             ChunkManager.Instance.SetChunkHeightRange(Chunk.Id, output.MinHeight, output.MaxHeight);
             ChunkManager.Instance.MarkChunkIdClean(Chunk.Id);
 
-            if (output.IsMonotype)
+            if (output.IsMonotype && !_shouldForcePolytype)
             {
                 Chunk.InitMaterializedMonotype(output.MonotypeChunkData);
             }
@@ -196,6 +203,8 @@ namespace VoxelGame.Terrain.ChunkTask
 
             ChunkManager.Instance.ScheduleMeshTask(chunk);
         }
+
+        private bool _shouldForcePolytype;
     }
 
     public class ChunkLoadTaskIn : IDisposable
