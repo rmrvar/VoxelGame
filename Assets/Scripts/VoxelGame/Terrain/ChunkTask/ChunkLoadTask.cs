@@ -12,11 +12,13 @@ namespace VoxelGame.Terrain.ChunkTask
             Chunk chunk, 
             CancellationToken token,
             bool shouldRunInBackground = true,
-            bool shouldForcePolytype = false
+            bool shouldForcePolytype = false,
+            bool shouldFinishLoading = true
           ) 
             : base(chunk, token, shouldRunInBackground)
         {
             _shouldForcePolytype = shouldForcePolytype;
+            _shouldFinishLoading = shouldFinishLoading;
         }
 
         public override bool TryLazyExecute()
@@ -26,13 +28,13 @@ namespace VoxelGame.Terrain.ChunkTask
                 return false;
             }
 
-            if (!ChunkManager.Instance.GetChunkHeightRange(Chunk.Id, out int minHeight, out int maxHeight))
+            _isDirty = ChunkManager.Instance.SaveSystem.IsDirty(Chunk.Id);
+            if (_isDirty)
             {
                 return false;
             }
 
-            // TODO: Return false if ChunkManager.Instance.SaveSystem has an entry for this chunk ID (includes if neighbor made change on border).
-            if (ChunkManager.Instance.IsChunkIdDirty(Chunk.Id))
+            if (!ChunkManager.Instance.GetChunkHeightRange(Chunk.Id, out int minHeight, out int maxHeight))
             {
                 return false;
             }
@@ -59,42 +61,62 @@ namespace VoxelGame.Terrain.ChunkTask
 
         protected override ChunkLoadTaskIn PrepareInput()
         {
-            return new ChunkLoadTaskIn(Chunk.Position);
+            Debug.Assert(Chunk.PolyData == null); // This task is for loading chunks for the first time or reloading them as PolyData.
+
+            byte[] saveData = null;
+            if (_isDirty)
+            {
+                ChunkManager.Instance.SaveSystem.TryGetSaveData(Chunk.Id, out saveData);
+            }
+
+            return new ChunkLoadTaskIn(Chunk.Position, saveData);
         }
 
         protected override ChunkLoadTaskOut Execute(ChunkLoadTaskIn input, CancellationToken cancellationToken)
         {
+            if (input.SaveData == null)
+            {
+                return Generate(input, cancellationToken);
+            }
+            else
+            {
+                return Parse(input, cancellationToken);
+            }
+        }
+
+        private ChunkLoadTaskOut Generate(ChunkLoadTaskIn input, CancellationToken cancellationToken)
+        {
             Vector3Int chunkPosition = input.Position;
 
-            // TODO: These have to take into account the neighboring strip of cells. Because a voxel underneath a
-            // cliff is visible even if it is completely beneath the cliff.
+            // HEIGHTMAP CALCULATION
             int minHeight = int.MaxValue;
             int maxHeight = int.MinValue;
 
-            for (int z = 0; z < ChunkConfig.SizeZ; ++z)
-            for (int x = 0; x < ChunkConfig.SizeX; ++x)
+            for (int z = 0; z < ChunkConfig.PSizeZ; ++z)
+            for (int x = 0; x < ChunkConfig.PSizeX; ++x)
             {
-                int heightIndex = x + z * ChunkConfig.SizeX;
+                int heightIndex = x + z * ChunkConfig.PSizeX;
                 int height = BiomeLogic.GetHeight(
-                    chunkPosition.x + x, 
-                    chunkPosition.z + z
+                    chunkPosition.x + x - 1,
+                    chunkPosition.z + z - 1
                   );
                 input.Heights[heightIndex] = height;
                 minHeight = Mathf.Min(minHeight, height);
                 maxHeight = Mathf.Max(maxHeight, height);
             }
 
-            bool isUniform = true;
+            // VOXEL CALCULATION
+            bool isMonotype = true;
             VoxelData.VoxelType? monotype = null;
 
             for (int z = 0; z < ChunkConfig.SizeZ; ++z)
             for (int y = 0; y < ChunkConfig.SizeY; ++y)
             {
-                int heightIndex0 = z * ChunkConfig.SizeX;
+                int heightIndex0 = (z + 1) * ChunkConfig.PSizeX;
 
                 for (int x = 0; x < ChunkConfig.SizeX; ++x)
                 {
-                    int heightIndex = heightIndex0 + x;
+                    int heightIndex = heightIndex0 + (x + 1);
                     int height = input.Heights[heightIndex];
 
                     Vector3Int position = chunkPosition + new Vector3Int(x, y, z);
@@ -103,15 +125,15 @@ namespace VoxelGame.Terrain.ChunkTask
 
                     input.PolytypeChunkData.Data[voxelTypeIndex] = voxelType;
 
-                    if (isUniform)
+                    if (isMonotype)
                     {
                         if (monotype == null)
                         {
                             monotype = voxelType;
-                        } else 
+                        } else
                         if (monotype != voxelType)
                         {
-                            isUniform = false;
+                            isMonotype = false;
                         }
                     }
                 }
@@ -120,10 +142,29 @@ namespace VoxelGame.Terrain.ChunkTask
             ChunkLoadTaskOut output = new()
             {
                 Input = input,
-                IsMonotype = isUniform,
+                IsMonotype = isMonotype,
                 MonotypeChunkData = new MonotypeChunkData(monotype.GetValueOrDefault()),
+                HasHeight = true,
                 MinHeight = minHeight,
                 MaxHeight = maxHeight
+            };
+            return output;
+        }
+
+        private ChunkLoadTaskOut Parse(ChunkLoadTaskIn input, CancellationToken cancellationToken)
+        {
+            byte[] saveData = input.SaveData;
+            for (int i = 0; i < saveData.Length; ++i)
+            {
+                input.PolytypeChunkData.Data[i] = (VoxelData.VoxelType)saveData[i];
+            }
+
+            ChunkLoadTaskOut output = new()
+            {
+                Input = input,
+                IsMonotype = false, // We're always poly type if loaded from file.
+                MonotypeChunkData = new MonotypeChunkData(),
+                HasHeight = false
             };
             return output;
         }
@@ -136,8 +177,15 @@ namespace VoxelGame.Terrain.ChunkTask
                 return; // Something went wrong.
             }
 
-            ChunkManager.Instance.SetChunkHeightRange(Chunk.Id, output.MinHeight, output.MaxHeight);
-            ChunkManager.Instance.MarkChunkIdClean(Chunk.Id);
+            if (IsCancelled())
+            {
+                return;
+            }
+
+            if (output.HasHeight)
+            {
+                ChunkManager.Instance.SetChunkHeightRange(Chunk.Id, output.MinHeight, output.MaxHeight);
+            }
 
             if (output.IsMonotype && !_shouldForcePolytype)
             {
@@ -149,7 +197,10 @@ namespace VoxelGame.Terrain.ChunkTask
                 output.Input.PolytypeChunkData = null; // This transfers ownership to Chunk.
             }
 
-            FinishLoading();
+            if (_shouldFinishLoading)
+            {
+                FinishLoading();
+            }
         }
 
         private void FinishLoading()
@@ -204,20 +255,24 @@ namespace VoxelGame.Terrain.ChunkTask
             ChunkManager.Instance.ScheduleMeshTask(chunk);
         }
 
-        private bool _shouldForcePolytype;
+        private bool _isDirty;
+        private readonly bool _shouldForcePolytype;
+        private readonly bool _shouldFinishLoading;
     }
 
     public class ChunkLoadTaskIn : IDisposable
     {
+        public byte[] SaveData;
         public int[] Heights;
         public PolytypeChunkData PolytypeChunkData;
         public Vector3Int Position;
 
-        public ChunkLoadTaskIn(Vector3Int position)
+        public ChunkLoadTaskIn(Vector3Int position, byte[] saveData)
         {
+            SaveData = saveData;
             Position = position;
             PolytypeChunkData = new PolytypeChunkData();
-            Heights = ArrayPool<int>.Shared.Rent(ChunkConfig.SizeX * ChunkConfig.SizeZ);
+            Heights = ArrayPool<int>.Shared.Rent(ChunkConfig.PSizeX * ChunkConfig.PSizeZ);
         }
 
         public void Dispose()
@@ -236,6 +291,7 @@ namespace VoxelGame.Terrain.ChunkTask
         public ChunkLoadTaskIn Input;
         public bool IsMonotype;
         public MonotypeChunkData MonotypeChunkData;
+        public bool HasHeight;
         public int MinHeight;
         public int MaxHeight;
     }

@@ -156,7 +156,6 @@ namespace VoxelGame.Terrain
 #endif
         }
 
-        // TODO: Hook up when start unloading chunks.
         public void Dispose()
         {
             _cts.Cancel();

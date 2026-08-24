@@ -671,6 +671,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _seed: 0
+  _shouldLoad: 1
+  _shouldSave: 1
   _chunkSize: {x: 32, y: 32, z: 32}
   _loadOrigin: {fileID: 1828581181}
   _loadRadiusXZ: 500
@@ -679,6 +681,7 @@ MonoBehaviour:
   _chunkRefreshCooldown: 0.5
   _maxActiveTasks: 4
   _maxTaskExecutesPerSecond: 100
+  _maxLazyExecutesPerFrame: 50
   _chunkMonoPrefab: {fileID: 353645850060703695, guid: 5d78c3d49de314747921acdf12eb90d4, type: 3}
   _chunkMonoPoolRefillThreshold: 1000
   _chunkMonoPoolRefillRate: 20

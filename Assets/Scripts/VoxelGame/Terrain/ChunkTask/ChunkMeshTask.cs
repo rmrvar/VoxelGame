@@ -55,7 +55,12 @@ namespace VoxelGame.Terrain.ChunkTask
                 return;
             }
 
-            if (Chunk.MeshVersion >= MeshVersion && !ChunkManager.Instance.IsChunkIdDirty(Chunk.Id))
+            if (IsCancelled())
+            {
+                return;
+            }
+
+            if (Chunk.MeshVersion > MeshVersion)
             {
                 return;
             }

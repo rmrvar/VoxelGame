@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using VoxelGame.Pooling;
+using VoxelGame.Saving;
 using VoxelGame.Terrain.ChunkTask;
 using VoxelGame.Terrain.Meshing;
 using Random = UnityEngine.Random;
@@ -11,6 +12,11 @@ namespace VoxelGame.Terrain
 	{
 		[SerializeField]
         private int _seed;
+
+        [SerializeField] 
+        private bool _shouldLoad;
+        [SerializeField] 
+        private bool _shouldSave;
 
         [SerializeField]
         private Vector3Int _chunkSize = new(32, 32, 32);
@@ -43,6 +49,7 @@ namespace VoxelGame.Terrain
 
         public static ChunkManager Instance { get; private set; }
 
+        public SaveSystem SaveSystem { get; private set; }
         public Pool<ChunkMono> ChunkMonoPool { get; private set; }
         public Pool<GreedyMesherBuffer> GreedyMesherBufferPool { get; private set; }
 
@@ -73,6 +80,19 @@ namespace VoxelGame.Terrain
               );
         }
 
+        public void ScheduleImmediateLoadPolytypeTask(Chunk chunk)
+        {
+            _scheduler.Interrupt(
+                new ChunkLoadTask(
+                    chunk,
+                    chunk.GetCancellationToken(),
+                    shouldRunInBackground: false,
+                    shouldForcePolytype: true,
+                    shouldFinishLoading: false // Already loaded. This is just to force polytype.
+                  )
+              );
+        }
+
         public void ScheduleImmediateMeshTask(Chunk chunk)
         {
             _scheduler.Interrupt(
@@ -82,33 +102,6 @@ namespace VoxelGame.Terrain
                     shouldRunInBackground: false
                   )
               );
-        }
-
-        public void ScheduleImmediateLoadPolytypeTask(Chunk chunk)
-        {
-            _scheduler.Interrupt(
-                new ChunkLoadTask(
-                    chunk,
-                    chunk.GetCancellationToken(),
-                    shouldRunInBackground: false,
-                    shouldForcePolytype: true
-                  )
-              );
-        }
-
-        public void MarkChunkIdDirty(Vector3Int chunkId)
-        {
-            _dirtyChunkIds.Add(chunkId);
-        }
-
-        public void MarkChunkIdClean(Vector3Int chunkId)
-        {
-            _dirtyChunkIds.Remove(chunkId);
-        }
-
-        public bool IsChunkIdDirty(Vector3Int chunkId)
-        {
-            return _dirtyChunkIds.Contains(chunkId);
         }
 
         public bool GetChunkHeightRange(Vector3Int id, out int minHeight, out int maxHeight)
@@ -140,13 +133,13 @@ namespace VoxelGame.Terrain
 
         public Chunk GetChunkByPos(Vector3 pos)
         {
-            _chunks.TryGetValue(GetChunkId(pos), out Chunk chunk);
+            _chunkIdToChunk.TryGetValue(GetChunkId(pos), out Chunk chunk);
             return chunk;
         }
 
         public Chunk GetChunkById(Vector3Int id)
         {
-            _chunks.TryGetValue(id, out Chunk chunk);
+            _chunkIdToChunk.TryGetValue(id, out Chunk chunk);
             return chunk;
         }
 
@@ -163,6 +156,12 @@ namespace VoxelGame.Terrain
 			Instance = this;
 
             Application.targetFrameRate = 60;
+
+            SaveSystem = new SaveSystem();
+            if (_shouldLoad)
+            {
+                SaveSystem.Load();
+            }
 
             Random.InitState(_seed);
             BiomeLogic.Init();
@@ -193,7 +192,20 @@ namespace VoxelGame.Terrain
             _chunkMonoPoolRefillTimer = _chunkMonoPoolRefillCooldown;
         }
 
-		private void Update()
+        private void OnDestroy()
+        {
+            if (_shouldSave)
+            {
+                SaveSystem.Save();
+            }
+
+            foreach (Chunk chunk in _chunkIdToChunk.Values)
+            {
+                chunk.Dispose();
+            }
+        }
+
+        private void Update()
 		{
             _currChunkId = GetChunkId(_loadOrigin.position);
             if (_currChunkId != _prevChunkId)
@@ -254,7 +266,7 @@ namespace VoxelGame.Terrain
                 {
                     int ix = x + _ratioX;
 
-                    if (_chunks.TryGetValue(chunkId, out var chunk))
+                    if (_chunkIdToChunk.TryGetValue(chunkId, out var chunk))
                     {
                         if (chunk.Mono != null)
                         {
@@ -266,7 +278,7 @@ namespace VoxelGame.Terrain
                     else
                     {
                         chunk = new Chunk(chunkId);
-                        _chunks.Add(chunkId, chunk);
+                        _chunkIdToChunk.Add(chunkId, chunk);
 
                         ScheduleLoadTask(chunk);
                     }
@@ -312,8 +324,7 @@ namespace VoxelGame.Terrain
         private Chunk[] _neighborY;
         private Chunk[,] _neighborZ;
 
-        private readonly HashSet<Vector3Int> _dirtyChunkIds = new(100);
-        private readonly Dictionary<Vector3Int, Chunk> _chunks = new(10000);
+        private readonly Dictionary<Vector3Int, Chunk> _chunkIdToChunk = new(10000);
         private readonly Dictionary<Vector2Int, Vector2Int> _chunkIdXZToHeightRange = new(1000);
 		private float _chunkRefreshTimer;
 

@@ -71,6 +71,7 @@ namespace VoxelGame
 
                 ++chunkToAffect.VoxelVersion;
 
+                ChunkManager.Instance.SaveSystem.MarkDirty(chunkToAffect.Id);
                 ChunkManager.Instance.ScheduleImmediateMeshTask(chunkToAffect);
 
                 foreach (Vector3Int neighborPosition in GetNeighboringPositions(posToAffect))
@@ -83,7 +84,7 @@ namespace VoxelGame
                         continue; // We have already meshed this chunk.
                     }
 
-                    ChunkManager.Instance.MarkChunkIdDirty(neighborChunkId);
+                    ChunkManager.Instance.SaveSystem.MarkDirty(neighborChunkId);
 
                     if (neighborChunk == null)
                     {
@@ -96,8 +97,6 @@ namespace VoxelGame
                         ChunkManager.Instance.ScheduleImmediateLoadPolytypeTask(neighborChunk);
                     }
                     ChunkManager.Instance.ScheduleImmediateMeshTask(neighborChunk);
-
-                    ChunkManager.Instance.MarkChunkIdClean(neighborChunkId);
                 }
 
 				//if (placeOrPickup)
