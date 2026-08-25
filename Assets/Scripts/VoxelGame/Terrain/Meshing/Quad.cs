@@ -2,7 +2,7 @@
 {
     public struct Quad
     {
-        public VoxelData.VoxelType Type;
+        public VoxelType Type;
         public byte MinX;
         public byte MinY;
         public byte MaxX;

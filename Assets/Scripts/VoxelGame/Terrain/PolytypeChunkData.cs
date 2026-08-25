@@ -1,6 +1,5 @@
 using System;
 using System.Buffers;
-using static VoxelGame.Terrain.VoxelData;
 
 namespace VoxelGame.Terrain
 {

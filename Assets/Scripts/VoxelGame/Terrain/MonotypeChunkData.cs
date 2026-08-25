@@ -1,5 +1,3 @@
-using static VoxelGame.Terrain.VoxelData;
-
 namespace VoxelGame.Terrain
 {
     // Provides symmetry with PolytypeChunkData.

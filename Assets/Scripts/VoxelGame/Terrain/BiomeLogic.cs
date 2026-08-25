@@ -83,7 +83,7 @@ namespace VoxelGame.Terrain
 			return mountainsHeight;
 		}
 
-        public static VoxelData.VoxelType GetVoxelType(
+        public static VoxelType GetVoxelType(
             Vector3Int voxelWorldPosition,
             int heightAtThisPosition
           )
@@ -99,20 +99,20 @@ namespace VoxelGame.Terrain
 
             if (voxelWorldPosition.y > heightAtThisPosition)
             {
-                return VoxelData.VoxelType.AIR;
+                return VoxelType.AIR;
             }
 
             if (voxelWorldPosition.y == heightAtThisPosition)
             {
-                return VoxelData.VoxelType.GRASS;
+                return VoxelType.GRASS;
             }
 
             if (heightAtThisPosition - voxelWorldPosition.y < dirtDepth)
             {
-                return VoxelData.VoxelType.DIRT;
+                return VoxelType.DIRT;
             }
 
-            return VoxelData.VoxelType.STONE;
+            return VoxelType.STONE;
         }
 
         public static int GetHeight(int x, int z)

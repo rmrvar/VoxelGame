@@ -2,7 +2,6 @@ using System;
 using System.Threading;
 using UnityEngine;
 using VoxelGame.Terrain.Meshing;
-using static VoxelGame.Terrain.VoxelData;
 
 namespace VoxelGame.Terrain.ChunkTask
 {

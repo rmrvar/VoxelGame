@@ -5,7 +5,7 @@ namespace VoxelGame.Terrain.Meshing
 {
     public sealed class GreedyMesherWorkspace
     {
-        public readonly VoxelData.VoxelType[] Types;
+        public readonly VoxelType[] Types;
         public readonly Quad[] GreedyQuads;
         public readonly int[] TopQuadIndices;
 
@@ -20,7 +20,7 @@ namespace VoxelGame.Terrain.Meshing
 
             int maxDimension = Mathf.Max(chunkSize.x, chunkSize.y, chunkSize.z);
 
-            Types = new VoxelData.VoxelType[maxDimension * maxDimension];
+            Types = new VoxelType[maxDimension * maxDimension];
             GreedyQuads = new Quad[maxDimension * maxDimension];
             TopQuadIndices = new int[maxDimension];
 

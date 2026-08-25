@@ -1,6 +1,5 @@
 ﻿using VoxelGame.Pooling;
 using VoxelGame.Terrain.Meshing;
-using static VoxelGame.Terrain.VoxelData;
 
 namespace VoxelGame.Terrain.ChunkTask
 {

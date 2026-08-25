@@ -1,5 +1,4 @@
 using System;
-using System.Buffers;
 using System.Threading;
 using UnityEngine;
 
@@ -106,7 +105,7 @@ namespace VoxelGame.Terrain.ChunkTask
 
             // VOXEL CALCULATION
             bool isMonotype = true;
-            VoxelData.VoxelType? monotype = null;
+            VoxelType? monotype = null;
 
             for (int z = 0; z < ChunkConfig.SizeZ; ++z)
             for (int y = 0; y < ChunkConfig.SizeY; ++y)
@@ -120,7 +119,7 @@ namespace VoxelGame.Terrain.ChunkTask
 
                     Vector3Int position = chunkPosition + new Vector3Int(x, y, z);
                     int voxelTypeIndex = x + y * ChunkConfig.StrideY + z * ChunkConfig.StrideZ;
-                    VoxelData.VoxelType voxelType = BiomeLogic.GetVoxelType(position, height);
+                    VoxelType voxelType = BiomeLogic.GetVoxelType(position, height);
 
                     pooledIn.PolytypeChunkData.Data[voxelTypeIndex] = voxelType;
 
@@ -155,7 +154,7 @@ namespace VoxelGame.Terrain.ChunkTask
             byte[] saveData = input.SaveData;
             for (int i = 0; i < saveData.Length; ++i)
             {
-                input.PooledIn.PolytypeChunkData.Data[i] = (VoxelData.VoxelType)saveData[i];
+                input.PooledIn.PolytypeChunkData.Data[i] = (VoxelType)saveData[i];
             }
 
             ChunkLoadTaskOut output = new()

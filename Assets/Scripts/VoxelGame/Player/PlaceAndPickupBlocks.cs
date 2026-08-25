@@ -63,11 +63,11 @@ namespace VoxelGame
 				if (placeOrPickup)
 				{
                     // TODO: Add support for different voxel types.
-                    chunkToAffect.PolyData.Data[indexToAffect] = VoxelData.VoxelType.DIRT;
+                    chunkToAffect.PolyData.Data[indexToAffect] = VoxelType.DIRT;
 				}
                 else
                 {
-                    chunkToAffect.PolyData.Data[indexToAffect] = VoxelData.VoxelType.AIR;
+                    chunkToAffect.PolyData.Data[indexToAffect] = VoxelType.AIR;
                 }
 
                 ++chunkToAffect.VoxelVersion;

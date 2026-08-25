@@ -67,13 +67,5 @@ namespace VoxelGame.Terrain
 			2,
 			0
 		};
-
-		public enum VoxelType : byte
-		{ 
-			AIR = 0,
-			DIRT,
-			GRASS,
-			STONE,
-		}
 	}
 }
