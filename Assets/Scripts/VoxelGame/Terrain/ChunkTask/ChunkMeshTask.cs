@@ -30,6 +30,8 @@ namespace VoxelGame.Terrain.ChunkTask
 
         public override bool TryLazyExecute()
         {
+            Debug.Assert(!_isRemesh);
+
             bool isMaterializedEmpty =
                 Chunk.IsMaterializedMonotype(out VoxelType voxelData) && voxelData == VoxelType.AIR;
             return isMaterializedEmpty;
