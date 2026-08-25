@@ -1,0 +1,33 @@
+﻿using VoxelGame.Pooling;
+using VoxelGame.Terrain.Meshing;
+using static VoxelGame.Terrain.VoxelData;
+
+namespace VoxelGame.Terrain.ChunkTask
+{
+    public sealed class ChunkMeshTaskPooledIn : IPoolable
+    {
+        public readonly VoxelType[] Voxels;
+        public readonly GreedyMesherWorkspace GreedyMesherWorkspace;
+
+        public static readonly Pool<ChunkMeshTaskPooledIn> Pool = new(
+            () => new ChunkMeshTaskPooledIn(),
+            10
+          );
+
+        public void OnBorrowed()
+        {
+            // Voxels are overwritten completely by ChunkMeshTask.
+            GreedyMesherWorkspace.Clear();
+        }
+
+        public void OnReturned()
+        {
+        }
+
+        private ChunkMeshTaskPooledIn()
+        {
+            Voxels = new VoxelType[ChunkConfig.PVolume];
+            GreedyMesherWorkspace = new GreedyMesherWorkspace();
+        }
+    }
+}

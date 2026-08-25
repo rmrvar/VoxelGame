@@ -18,10 +18,7 @@ namespace VoxelGame.Pooling
               );
             _create = create;
 
-            for (int i = 0; i < initialCount; ++i)
-            {
-                PrewarmOne();
-            }
+            Warm(initialCount);
         }
 
         public T Borrow()
@@ -34,9 +31,12 @@ namespace VoxelGame.Pooling
             _pool.Release(item);
         }
 
-        public void PrewarmOne()
+        public void Warm(int n)
         {
-            _pool.Release(_create());
+            for (int i = 0; i < n; ++i)
+            {
+                _pool.Release(_create());
+            }
         }
 
         private readonly ObjectPool<T> _pool;

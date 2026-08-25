@@ -12,24 +12,21 @@ namespace VoxelGame.Terrain.ChunkTask
             Chunk chunk, 
             CancellationToken token,
             bool shouldRunInBackground = true,
-            bool shouldForcePolytype = false,
-            bool shouldFinishLoading = true
+            bool isReload = false
           ) 
             : base(chunk, token, shouldRunInBackground)
         {
-            _shouldForcePolytype = shouldForcePolytype;
-            _shouldFinishLoading = shouldFinishLoading;
+            _isReload = isReload;
         }
 
         public override bool TryLazyExecute()
         {
-            if (_shouldForcePolytype)
-            {
-                return false;
-            }
+            Debug.Assert(!_isReload);
 
-            _isDirty = ChunkManager.Instance.SaveSystem.IsDirty(Chunk.Id);
-            if (_isDirty)
+            ChunkManager.Instance.SaveSystem.TryGetSaveData(Chunk.Id, out _saveData);
+            _isSaveDataInit = true;
+
+            if (_saveData != null)
             {
                 return false;
             }
@@ -63,13 +60,13 @@ namespace VoxelGame.Terrain.ChunkTask
         {
             Debug.Assert(Chunk.PolyData == null); // This task is for loading chunks for the first time or reloading them as PolyData.
 
-            byte[] saveData = null;
-            if (_isDirty)
+            if (!_isSaveDataInit)
             {
-                ChunkManager.Instance.SaveSystem.TryGetSaveData(Chunk.Id, out saveData);
+                ChunkManager.Instance.SaveSystem.TryGetSaveData(Chunk.Id, out _saveData);
+                _isSaveDataInit = true;
             }
 
-            return new ChunkLoadTaskIn(Chunk.Position, saveData);
+            return new ChunkLoadTaskIn(Chunk.Position, _saveData);
         }
 
         protected override ChunkLoadTaskOut Execute(ChunkLoadTaskIn input, CancellationToken cancellationToken)
@@ -86,6 +83,8 @@ namespace VoxelGame.Terrain.ChunkTask
 
         private ChunkLoadTaskOut Generate(ChunkLoadTaskIn input, CancellationToken cancellationToken)
         {
+            ChunkLoadTaskPooledIn pooledIn = input.PooledIn;
+
             Vector3Int chunkPosition = input.Position;
 
             // HEIGHTMAP CALCULATION
@@ -100,7 +99,7 @@ namespace VoxelGame.Terrain.ChunkTask
                     chunkPosition.x + x - 1,
                     chunkPosition.z + z - 1
                   );
-                input.Heights[heightIndex] = height;
+                pooledIn.Heights[heightIndex] = height;
                 minHeight = Mathf.Min(minHeight, height);
                 maxHeight = Mathf.Max(maxHeight, height);
             }
@@ -117,13 +116,13 @@ namespace VoxelGame.Terrain.ChunkTask
                 for (int x = 0; x < ChunkConfig.SizeX; ++x)
                 {
                     int heightIndex = heightIndex0 + (x + 1);
-                    int height = input.Heights[heightIndex];
+                    int height = pooledIn.Heights[heightIndex];
 
                     Vector3Int position = chunkPosition + new Vector3Int(x, y, z);
                     int voxelTypeIndex = x + y * ChunkConfig.StrideY + z * ChunkConfig.StrideZ;
                     VoxelData.VoxelType voxelType = BiomeLogic.GetVoxelType(position, height);
 
-                    input.PolytypeChunkData.Data[voxelTypeIndex] = voxelType;
+                    pooledIn.PolytypeChunkData.Data[voxelTypeIndex] = voxelType;
 
                     if (isMonotype)
                     {
@@ -156,14 +155,14 @@ namespace VoxelGame.Terrain.ChunkTask
             byte[] saveData = input.SaveData;
             for (int i = 0; i < saveData.Length; ++i)
             {
-                input.PolytypeChunkData.Data[i] = (VoxelData.VoxelType)saveData[i];
+                input.PooledIn.PolytypeChunkData.Data[i] = (VoxelData.VoxelType)saveData[i];
             }
 
             ChunkLoadTaskOut output = new()
             {
                 Input = input,
                 IsMonotype = false, // We're always poly type if loaded from file.
-                MonotypeChunkData = new MonotypeChunkData(),
+                MonotypeChunkData = default,
                 HasHeight = false
             };
             return output;
@@ -187,17 +186,17 @@ namespace VoxelGame.Terrain.ChunkTask
                 ChunkManager.Instance.SetChunkHeightRange(Chunk.Id, output.MinHeight, output.MaxHeight);
             }
 
-            if (output.IsMonotype && !_shouldForcePolytype)
+            if (output.IsMonotype && !_isReload)
             {
                 Chunk.InitMaterializedMonotype(output.MonotypeChunkData);
             }
             else
             {
-                Chunk.InitMaterializedPolytype(output.Input.PolytypeChunkData);
-                output.Input.PolytypeChunkData = null; // This transfers ownership to Chunk.
+                Chunk.InitMaterializedPolytype(output.Input.PooledIn.PolytypeChunkData);
+                output.Input.PooledIn.PolytypeChunkData = null; // This transfers ownership to Chunk.
             }
 
-            if (_shouldFinishLoading)
+            if (!_isReload)
             {
                 FinishLoading();
             }
@@ -255,34 +254,27 @@ namespace VoxelGame.Terrain.ChunkTask
             ChunkManager.Instance.ScheduleMeshTask(chunk);
         }
 
-        private bool _isDirty;
-        private readonly bool _shouldForcePolytype;
-        private readonly bool _shouldFinishLoading;
+        private byte[] _saveData;
+        private bool _isSaveDataInit;
+        private readonly bool _isReload;
     }
 
     public class ChunkLoadTaskIn : IDisposable
     {
-        public byte[] SaveData;
-        public int[] Heights;
-        public PolytypeChunkData PolytypeChunkData;
         public Vector3Int Position;
+        public byte[] SaveData;
+        public ChunkLoadTaskPooledIn PooledIn;
 
         public ChunkLoadTaskIn(Vector3Int position, byte[] saveData)
         {
             SaveData = saveData;
             Position = position;
-            PolytypeChunkData = new PolytypeChunkData();
-            Heights = ArrayPool<int>.Shared.Rent(ChunkConfig.PSizeX * ChunkConfig.PSizeZ);
+            PooledIn = ChunkLoadTaskPooledIn.Pool.Borrow();
         }
 
         public void Dispose()
         {
-            if (PolytypeChunkData != null)
-            {
-                PolytypeChunkData.Dispose();
-                PolytypeChunkData = null;
-            }
-            ArrayPool<int>.Shared.Return(Heights);
+            ChunkLoadTaskPooledIn.Pool.Return(PooledIn);
         }
     }
 

@@ -6,13 +6,13 @@ namespace VoxelGame.Terrain.Meshing
 {
 	public static class GreedyMesher
     {
-        public static void Generate(VoxelType[] voxels, GreedyMesherBuffer buffer)
+        public static void Generate(VoxelType[] voxels, GreedyMesherWorkspace workspace)
         {
 			for (int sliceNormalSign = 0; sliceNormalSign < 2; ++sliceNormalSign)
             for (int sliceNormalAxis = 0; sliceNormalAxis < 3; ++sliceNormalAxis)
             {
 				// This gives you essentially what kind of faces you are merging.
-				GenerateSlice(sliceNormalAxis, sliceNormalSign, voxels, buffer);
+				GenerateSlice(sliceNormalAxis, sliceNormalSign, voxels, workspace);
             }
         }
 
@@ -20,7 +20,7 @@ namespace VoxelGame.Terrain.Meshing
             int normalAxis, 
             int normalSign,
             VoxelType[] voxels, 
-            GreedyMesherBuffer buffer
+            GreedyMesherWorkspace workspace
           )
         {
             int faceIndex = GetFaceIndex(normalAxis, normalSign);
@@ -58,9 +58,9 @@ namespace VoxelGame.Terrain.Meshing
                 }
             }
 
-            VoxelType[] types = buffer.Types;
-            int[] topQuadIndices = buffer.TopQuadIndices;
-            Quad[] quads = buffer.GreedyQuads;
+            VoxelType[] types = workspace.Types;
+            int[] topQuadIndices = workspace.TopQuadIndices;
+            Quad[] quads = workspace.GreedyQuads;
 
 			for (int d = 1; d < slicePSize.z - 1; ++d)
 			{
@@ -158,7 +158,7 @@ namespace VoxelGame.Terrain.Meshing
                 for (int i = 0; i < numQuads; ++i)
                 {
                     ref Quad quad = ref quads[i];
-					CreateQuad(faceIndex, normalAxis, normalSign, d, quad, buffer);
+					CreateQuad(faceIndex, normalAxis, normalSign, d, quad, workspace);
                 }
             }
         }
@@ -169,7 +169,7 @@ namespace VoxelGame.Terrain.Meshing
             int normalSign,
             int depth,
             Quad quad, 
-            GreedyMesherBuffer buffer
+            GreedyMesherWorkspace workspace
           )
         {
             int w = quad.MaxX - quad.MinX;
@@ -180,11 +180,11 @@ namespace VoxelGame.Terrain.Meshing
             Vector3[] vertices = Vertices[faceIndex];
             Vector3[] uvs = UVs3[faceIndex];
 
-            buffer.Normals.AddRange(Normals[faceIndex]);
+            workspace.Normals.AddRange(Normals[faceIndex]);
 
             for (int i = 0; i < 4; ++i)
             {
-				buffer.Quads.Add(buffer.Vertices.Count);
+				workspace.Quads.Add(workspace.Vertices.Count);
 
                 Vector3 vertex = vertices[i];
                 Vector3 sliceVertex = ToSliceSpace(vertex, normalAxis);
@@ -194,7 +194,7 @@ namespace VoxelGame.Terrain.Meshing
                 sliceVertex.z = depth - normalSign;
 
                 Vector3 newVertex = ToLocalSpace(sliceVertex, normalAxis);
-                buffer.Vertices.Add(newVertex);
+                workspace.Vertices.Add(newVertex);
 
                 Vector3 uv = uvs[i];
                 if (faceIndex is 0 or 3)
@@ -209,11 +209,11 @@ namespace VoxelGame.Terrain.Meshing
                     uv.y *= h;
                 }
                 uv.z += uvOffset;
-                buffer.UVs.Add(uv);
+                workspace.UVs.Add(uv);
             }
         }
 
-        public static Mesh GetMesh(GreedyMesherBuffer buffer, Mesh mesh = null)
+        public static Mesh GetMesh(GreedyMesherWorkspace workspace, Mesh mesh = null)
         {
             if (mesh == null)
             {
@@ -223,10 +223,10 @@ namespace VoxelGame.Terrain.Meshing
             {
                 mesh.Clear();
             }
-            mesh.SetVertices(buffer.Vertices);
-            mesh.SetNormals(buffer.Normals);
-            mesh.SetUVs(0, buffer.UVs);
-            mesh.SetIndices(buffer.Quads, MeshTopology.Quads, 0);
+            mesh.SetVertices(workspace.Vertices);
+            mesh.SetNormals(workspace.Normals);
+            mesh.SetUVs(0, workspace.UVs);
+            mesh.SetIndices(workspace.Quads, MeshTopology.Quads, 0);
             mesh.RecalculateBounds(); // TODO: Investigate the necessity of this.
             return mesh;
         }

@@ -1,5 +1,4 @@
 using System;
-using System.Buffers;
 using System.Threading;
 using UnityEngine;
 using VoxelGame.Terrain.Meshing;
@@ -15,14 +14,19 @@ namespace VoxelGame.Terrain.ChunkTask
         public ChunkMeshTask(
             Chunk chunk,
             CancellationToken token,
-            bool shouldRunInBackground = true
+            bool shouldRunInBackground = true,
+            bool isRemesh = false
           )
             : base(chunk, token, shouldRunInBackground)
         {
             MeshVersion = chunk.VoxelVersion;
+            _isRemesh = isRemesh;
         }
 
-        public override bool IsCancelled() => Chunk.MeshVersion >= MeshVersion || base.IsCancelled();
+        public bool IsMeshOutOfDate =>
+            Chunk.MeshVersion > MeshVersion || (Chunk.MeshVersion == MeshVersion && !_isRemesh);
+
+        public override bool IsCancelled() => IsMeshOutOfDate || base.IsCancelled();
 
         public override bool TryLazyExecute()
         {
@@ -34,16 +38,18 @@ namespace VoxelGame.Terrain.ChunkTask
         protected override ChunkMeshTaskIn PrepareInput()
         {
             ChunkMeshTaskIn input = new();
-            CopyVoxels(input.Voxels);
+            CopyVoxels(input.PooledIn.Voxels);
             return input;
         }
 
         protected override ChunkMeshTaskOut Execute(ChunkMeshTaskIn input, CancellationToken cancellationToken)
         {
-            ChunkMeshTaskOut output = new() { Buffer = input.Buffer };
+            GreedyMesher.Generate(input.PooledIn.Voxels, input.PooledIn.GreedyMesherWorkspace);
 
-            GreedyMesher.Generate(input.Voxels, input.Buffer);
-
+            ChunkMeshTaskOut output = new()
+            {
+                GreedyMesherWorkspace = input.PooledIn.GreedyMesherWorkspace
+            };
             return output;
         }
 
@@ -60,17 +66,12 @@ namespace VoxelGame.Terrain.ChunkTask
                 return;
             }
 
-            if (Chunk.MeshVersion > MeshVersion)
-            {
-                return;
-            }
-
             if (Chunk.Mono == null)
             {
                 Chunk.InitMono();
             }
 
-            GreedyMesher.GetMesh(output.Buffer, Chunk.Mono.Mesh);
+            GreedyMesher.GetMesh(output.GreedyMesherWorkspace, Chunk.Mono.Mesh);
             Chunk.Mono.Refresh();
             Chunk.Mono.IsVisible = true;
             Chunk.MeshVersion = MeshVersion;
@@ -347,28 +348,27 @@ namespace VoxelGame.Terrain.ChunkTask
                 }
             }
         }
+
+        private readonly bool _isRemesh;
     }
 
     public class ChunkMeshTaskIn : IDisposable
     {
-        public VoxelType[] Voxels;
-        public GreedyMesherBuffer Buffer;
+        public ChunkMeshTaskPooledIn PooledIn;
 
         public ChunkMeshTaskIn()
         {
-            Voxels = ArrayPool<VoxelType>.Shared.Rent(ChunkConfig.PVolume);
-            Buffer = ChunkManager.Instance.GreedyMesherBufferPool.Borrow();
+            PooledIn = ChunkMeshTaskPooledIn.Pool.Borrow();
         }
 
         public void Dispose()
         {
-            ArrayPool<VoxelType>.Shared.Return(Voxels);
-            ChunkManager.Instance.GreedyMesherBufferPool.Return(Buffer);
+            ChunkMeshTaskPooledIn.Pool.Return(PooledIn);
         }
     }
 
     public class ChunkMeshTaskOut
     {
-        public GreedyMesherBuffer Buffer;
+        public GreedyMesherWorkspace GreedyMesherWorkspace;
     }
 }

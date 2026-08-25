@@ -533,35 +533,19 @@ public class TestGreedyMeshing : MonoBehaviour
 
     private void Start()
     {
-        _greedyMesherBufferPool = new Pool<GreedyMesherBuffer>(
-            () => new GreedyMesherBuffer(),
-            1
-          );
         CreateChunk();
     }
 
     private void DoTest(Vector3Int size, VoxelData.VoxelType[] types)
     {
         ChunkConfig.Init(size);
-        GreedyMesherBuffer buffer = _greedyMesherBufferPool.Borrow();
-        try
+        GreedyMesherWorkspace workspace = new();
+        GreedyMesher.Generate(types, workspace);
+        Mesh mesh = GreedyMesher.GetMesh(workspace);
+        MeshFilter filter = GetComponent<MeshFilter>();
+        if (filter != null)
         {
-            GreedyMesher.Generate(types, buffer);
-            Mesh mesh = GreedyMesher.GetMesh(buffer);
-            MeshFilter filter = GetComponent<MeshFilter>();
-            if (filter != null)
-            {
-                filter.sharedMesh = mesh;
-            }
-        }
-        finally
-        {
-            if (buffer != null)
-            {
-                _greedyMesherBufferPool.Return(buffer);
-            }
+            filter.sharedMesh = mesh;
         }
     }
-
-    private Pool<GreedyMesherBuffer> _greedyMesherBufferPool;
 }

@@ -7,7 +7,7 @@ namespace VoxelGame
 {
 	public class PlaceAndPickupBlocks : MonoBehaviour
 	{
-		[SerializeField] private Transform _lookRoot = null;
+		[SerializeField] private Transform _lookRoot;
 
 		private void Awake()
 		{
@@ -36,7 +36,7 @@ namespace VoxelGame
 		private void InteractWithBlock(bool placeOrPickup)
 		{
 			var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-			var layerMask = 1 << LayerMask.NameToLayer("Chunk");  // We only want to intersect the Chunk.
+			var layerMask = 1 << LayerMask.NameToLayer("Chunk");
 
 			Debug.DrawLine(_lookRoot.position, _lookRoot.position + ray.direction.normalized * 7f, Color.blue, 1f);
 
@@ -53,7 +53,7 @@ namespace VoxelGame
                 if (!chunkToAffect.IsMaterializedPolytype)
                 {
 					// We need voxels to work with.
-					ChunkManager.Instance.ScheduleImmediateLoadPolytypeTask(chunkToAffect);
+					ChunkManager.Instance.ScheduleImmediateReloadTask(chunkToAffect);
                 }
 
 				DrawCube(posToAffect);
@@ -62,7 +62,8 @@ namespace VoxelGame
 
 				if (placeOrPickup)
 				{
-                    chunkToAffect.PolyData.Data[indexToAffect] = VoxelData.VoxelType.DIRT; // TODO: Add support for different voxel types.
+                    // TODO: Add support for different voxel types.
+                    chunkToAffect.PolyData.Data[indexToAffect] = VoxelData.VoxelType.DIRT;
 				}
                 else
                 {
@@ -72,7 +73,8 @@ namespace VoxelGame
                 ++chunkToAffect.VoxelVersion;
 
                 ChunkManager.Instance.SaveSystem.MarkDirty(chunkToAffect.Id);
-                ChunkManager.Instance.ScheduleImmediateMeshTask(chunkToAffect);
+
+                ChunkManager.Instance.ScheduleImmediateRemeshTask(chunkToAffect);
 
                 foreach (Vector3Int neighborPosition in GetNeighboringPositions(posToAffect))
                 {
@@ -88,15 +90,18 @@ namespace VoxelGame
 
                     if (neighborChunk == null)
                     {
-                        // Only happens with really fast player and unloading, but shouldn't be an issue with dirtiness.
+                        // Only happens with really fast player and unloading, but shouldn't be
+                        // an issue with dirtiness.
                         continue;
                     }
 
-                    if (!neighborChunk.IsMaterialized)
+                    if (!neighborChunk.IsMaterializedPolytype)
                     {
-                        ChunkManager.Instance.ScheduleImmediateLoadPolytypeTask(neighborChunk);
+                        // We could technically render a dirty materialized monotype chunk, but
+                        // the save system wants all dirty chunks to be polytypes.
+                        ChunkManager.Instance.ScheduleImmediateReloadTask(neighborChunk);
                     }
-                    ChunkManager.Instance.ScheduleImmediateMeshTask(neighborChunk);
+                    ChunkManager.Instance.ScheduleImmediateRemeshTask(neighborChunk);
                 }
 
 				//if (placeOrPickup)

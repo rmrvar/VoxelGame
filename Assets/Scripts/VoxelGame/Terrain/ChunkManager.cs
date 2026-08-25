@@ -3,7 +3,6 @@ using UnityEngine;
 using VoxelGame.Pooling;
 using VoxelGame.Saving;
 using VoxelGame.Terrain.ChunkTask;
-using VoxelGame.Terrain.Meshing;
 using Random = UnityEngine.Random;
 
 namespace VoxelGame.Terrain
@@ -51,7 +50,6 @@ namespace VoxelGame.Terrain
 
         public SaveSystem SaveSystem { get; private set; }
         public Pool<ChunkMono> ChunkMonoPool { get; private set; }
-        public Pool<GreedyMesherBuffer> GreedyMesherBufferPool { get; private set; }
 
         public void ScheduleLoadTask(Chunk chunk)
         {
@@ -69,37 +67,26 @@ namespace VoxelGame.Terrain
               );
         }
 
-        public void ScheduleImmediateLoadTask(Chunk chunk)
-        {
-            _scheduler.Interrupt(
-                new ChunkLoadTask(
-                    chunk,
-                    chunk.GetCancellationToken(),
-                    shouldRunInBackground: false
-                  )
-              );
-        }
-
-        public void ScheduleImmediateLoadPolytypeTask(Chunk chunk)
+        public void ScheduleImmediateReloadTask(Chunk chunk)
         {
             _scheduler.Interrupt(
                 new ChunkLoadTask(
                     chunk,
                     chunk.GetCancellationToken(),
                     shouldRunInBackground: false,
-                    shouldForcePolytype: true,
-                    shouldFinishLoading: false // Already loaded. This is just to force polytype.
+                    isReload: true
                   )
               );
         }
 
-        public void ScheduleImmediateMeshTask(Chunk chunk)
+        public void ScheduleImmediateRemeshTask(Chunk chunk)
         {
             _scheduler.Interrupt(
                 new ChunkMeshTask(
                     chunk,
                     chunk.GetCancellationToken(),
-                    shouldRunInBackground: false
+                    shouldRunInBackground: false,
+                    isRemesh: true
                   )
               );
         }
@@ -183,10 +170,6 @@ namespace VoxelGame.Terrain
                 () => Instantiate(_chunkMonoPrefab, transform),
                 _chunkMonoPoolRefillThreshold
               );
-            GreedyMesherBufferPool = new Pool<GreedyMesherBuffer>(
-                () => new GreedyMesherBuffer(),
-                _maxActiveTasks + 2
-              );
 
             _chunkMonoPoolRefillCooldown = 1f / _chunkMonoPoolRefillRate;
             _chunkMonoPoolRefillTimer = _chunkMonoPoolRefillCooldown;
@@ -235,7 +218,7 @@ namespace VoxelGame.Terrain
                 return;
             }
 
-            ChunkMonoPool.PrewarmOne();
+            ChunkMonoPool.Warm(1);
             _chunkMonoPoolRefillTimer = _chunkMonoPoolRefillCooldown;
         }
 

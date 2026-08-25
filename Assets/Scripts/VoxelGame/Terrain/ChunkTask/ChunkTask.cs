@@ -30,7 +30,6 @@ namespace VoxelGame.Terrain.ChunkTask
         }
 
         public virtual bool IsCancelled() => Token.IsCancellationRequested;
-        public virtual bool CanExecute() => true;
 
         public virtual bool TryLazyExecute() => false;
 
