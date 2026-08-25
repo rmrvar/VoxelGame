@@ -5,6 +5,7 @@ namespace VoxelGame.Terrain.ChunkTask
     public sealed class ChunkLoadTaskPooledIn : IPoolable
     {
         public readonly int[] Heights;
+        public readonly int[] PoissonDisk;
         public PolytypeChunkData PolytypeChunkData;
 
         public static readonly Pool<ChunkLoadTaskPooledIn> Pool = new(
@@ -29,6 +30,10 @@ namespace VoxelGame.Terrain.ChunkTask
         {
             PolytypeChunkData = new PolytypeChunkData();
             Heights = new int[ChunkConfig.PSizeX * ChunkConfig.PSizeZ];
+            // Why times 4? Need to guarantee the existance of neighbor at -R. Which needs info of -2R.
+            int diskPSizeX = 4 * ChunkConfig.PoissonDiskRadius + ChunkConfig.SizeX;
+            int diskPSizeZ = 4 * ChunkConfig.PoissonDiskRadius + ChunkConfig.SizeZ;
+            PoissonDisk = new int[diskPSizeX * diskPSizeZ];
         }
     }
 }

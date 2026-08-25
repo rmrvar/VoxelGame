@@ -98,6 +98,7 @@ namespace VoxelGame.Terrain.ChunkTask
                     chunkPosition.x + x - 1,
                     chunkPosition.z + z - 1
                   );
+                height += 10; // Tree height upper estimate.
                 pooledIn.Heights[heightIndex] = height;
                 minHeight = Mathf.Min(minHeight, height);
                 maxHeight = Mathf.Max(maxHeight, height);
@@ -135,6 +136,71 @@ namespace VoxelGame.Terrain.ChunkTask
                         }
                     }
                 }
+            }
+
+            // TREE PLACEMENT
+            int diskPSizeX = 4 * ChunkConfig.PoissonDiskRadius + ChunkConfig.SizeX;
+            int diskPSizeZ = 4 * ChunkConfig.PoissonDiskRadius + ChunkConfig.SizeZ;
+            for (int z = 0; z < diskPSizeZ; ++z)
+            for (int x = 0; x < diskPSizeX; ++x)
+            {
+                int i = x + z * diskPSizeX;
+                int worldX = input.Position.x + x - ChunkConfig.PoissonDiskRadius;
+                int worldZ = input.Position.z + z - ChunkConfig.PoissonDiskRadius;
+
+                pooledIn.PoissonDisk[i] = Hash(worldX, worldZ);
+            }
+
+            int startX = ChunkConfig.PoissonDiskRadius;
+            int startZ = ChunkConfig.PoissonDiskRadius;
+            int endX = diskPSizeX - ChunkConfig.PoissonDiskRadius;
+            int endZ = diskPSizeZ - ChunkConfig.PoissonDiskRadius;
+            for (int z = startZ; z < endZ; ++z)
+            for (int x = startX; x < endX; ++x)
+            {
+                int outerIndex = x + z * diskPSizeX;
+                int outerValue = pooledIn.PoissonDisk[outerIndex];
+
+                for (int dz = -ChunkConfig.PoissonDiskRadius; dz <= +ChunkConfig.PoissonDiskRadius; ++dz)
+                for (int dx = -ChunkConfig.PoissonDiskRadius; dx <= +ChunkConfig.PoissonDiskRadius; ++dx)
+                {
+                    if (dx == 0 && dz == 0)
+                    {
+                        continue; // Center
+                    }
+
+                    int innerIndexX = x + dx;
+                    int innerIndexZ = z + dz;
+                    int innerIndex = innerIndexX + innerIndexZ * diskPSizeX;
+                    int innerValue = pooledIn.PoissonDisk[innerIndex];
+                    if (innerValue >= outerValue)
+                    {
+                        goto end;
+                    }
+                }
+
+                // Tree exists. See if any part crosses border.
+                int realX = x - ChunkConfig.PoissonDiskRadius;
+                int realZ = z - ChunkConfig.PoissonDiskRadius;
+
+                if (realX < 0 || realZ < 0 || realX >= ChunkConfig.SizeX || realZ >= ChunkConfig.SizeZ)
+                {
+                    continue; // Out of bounds in XZ.
+                }
+
+                int yIndex = (realX + 1) + (realZ + 1) * ChunkConfig.PSizeX;
+                int realY = pooledIn.Heights[yIndex] - input.Position.y + 1;
+                if (realY < 0 || realY >= ChunkConfig.SizeY)
+                {
+                    continue; // Out of bounds in Y.
+                }
+
+                // Place a tree.
+                int polytypeIndex = realX + realY * ChunkConfig.StrideY + realZ * ChunkConfig.StrideZ;
+                pooledIn.PolytypeChunkData.Data[polytypeIndex] = VoxelType.STONE;
+                isMonotype = false;
+
+                end:;
             }
 
             ChunkLoadTaskOut output = new()
@@ -251,6 +317,14 @@ namespace VoxelGame.Terrain.ChunkTask
             }
 
             ChunkManager.Instance.ScheduleMeshTask(chunk);
+        }
+
+        private static int Hash(int x, int y)
+        {
+            uint h = (uint)x * 374761393u;
+            h += (uint)y * 668265263u;
+            h = (h ^ (h >> 13)) * 1274126177u;
+            return (int)(h ^ (h >> 16));
         }
 
         private byte[] _saveData;

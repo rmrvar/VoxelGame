@@ -24,6 +24,8 @@ namespace VoxelGame.Terrain
         public static int PStrideY => _pStrideY;
         public static int PStrideZ => _pStrideZ;
 
+        public static int PoissonDiskRadius = 5;
+
         public static void Init(Vector3Int size)
         {
             Debug.Assert(!_isInitialized);
