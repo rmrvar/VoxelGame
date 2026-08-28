@@ -3,162 +3,175 @@ using UnityEngine;
 namespace VoxelGame.Terrain
 { 
 	public static class BiomeLogic
-	{
-        private static Vector3 _offset;
-        private static Vector3 _offset2;
-        private static Vector3 _offset3;		
-        private static Vector3 _offset4;		
-        private static Vector3 _offset5;
-
-        public static void Init()
+    {
+        public static VoxelType GetVoxelType(int x, int y, int z, int h)
         {
-            _offset = Random.insideUnitSphere * 20000;
-            _offset2 = Random.insideUnitSphere * 20000;
-            _offset3 = Random.insideUnitSphere * 20000;
-            _offset4 = Random.insideUnitSphere * 20000;
-            _offset5 = Random.insideUnitSphere * 20000;
-        }
-
-		private static int GetFlatlandHeight(Vector3 voxelWorldPosition, Vector3 swappedVoxelWorldPosition)
-		{
-			var flatlandPos = (voxelWorldPosition + _offset3) * 0.01F;
-			return Mathf.FloorToInt(Mathf.PerlinNoise(flatlandPos.x, flatlandPos.z) * 10);
-		}
-
-		private static int GetHillsHeight(float biomeVal, Vector3 voxelWorldPosition, Vector3 swappedVoxelWorldPosition)
-		{
-			var hillsPos = Vector3.Scale(swappedVoxelWorldPosition + _offset2, new Vector3(0.02F, 0, -0.02F));
-
-			var minHillHeight = 15F;
-			var maxHillHeight = 55F;
-			var delta = maxHillHeight - minHillHeight;
-
-			var hillsHeight = Mathf.FloorToInt(Mathf.PerlinNoise(hillsPos.x, hillsPos.z) * delta + minHillHeight);
-			if (biomeVal < 0.65F)
-			{
-				var distanceFromFlatlandRatio = (biomeVal - 0.4F) / 0.25F;
-				var flatlandsHeight = GetFlatlandHeight(voxelWorldPosition, swappedVoxelWorldPosition);
-				hillsHeight = Mathf.FloorToInt(hillsHeight * distanceFromFlatlandRatio + flatlandsHeight * (1 - distanceFromFlatlandRatio));
-			}
-			return hillsHeight;
-		}
-
-		private static int GetMountainsHeight(float biomeVal, Vector3 voxelWorldPosition, Vector3 swappedVoxelWorldPosition)
-		{
-			var mountainsPos = (swappedVoxelWorldPosition + _offset5) * 0.005F;
-
-			var minMountainHeight = 110F;
-			var maxMountainHeight = 140F;
-			var delta = maxMountainHeight - minMountainHeight;
-
-			var mountainsHeight = Mathf.FloorToInt(Mathf.PerlinNoise(mountainsPos.x, mountainsPos.z) * delta + minMountainHeight);
-
-			if (biomeVal < 0.90F)
-			{
-				var distanceFromHillsRatio = (biomeVal - 0.7F) / 0.2F;
-				distanceFromHillsRatio *= distanceFromHillsRatio;
-				var hillsHeight = GetHillsHeight(biomeVal, voxelWorldPosition, swappedVoxelWorldPosition);
-				mountainsHeight = Mathf.FloorToInt(mountainsHeight * distanceFromHillsRatio + hillsHeight * (1 - distanceFromHillsRatio));
-			}
-			return mountainsHeight;
-		}
-
-		private static int GetPlateauHeight(float biomeVal, Vector3 voxelWorldPosition, Vector3 swappedVoxelWorldPosition)
-		{
-			var mountainsPos = (swappedVoxelWorldPosition + _offset5) * 0.005F;
-
-			var minMountainHeight = 60F;
-			var maxMountainHeight = 70F;
-			var delta = maxMountainHeight - minMountainHeight;
-
-			var mountainsHeight = Mathf.FloorToInt(Mathf.PerlinNoise(mountainsPos.x, mountainsPos.z) * delta + minMountainHeight);
-
-			if (biomeVal < 0.7F)
-			{
-				var distanceFromHillsRatio = (biomeVal - 0.6F) / 0.1F;
-				distanceFromHillsRatio *= distanceFromHillsRatio;
-				var hillsHeight = GetHillsHeight(biomeVal, voxelWorldPosition, swappedVoxelWorldPosition);
-				mountainsHeight = Mathf.FloorToInt(mountainsHeight * distanceFromHillsRatio + hillsHeight * (1 - distanceFromHillsRatio));
-			}
-			return mountainsHeight;
-		}
-
-        public static VoxelType GetVoxelType(
-            Vector3Int voxelWorldPosition,
-            int heightAtThisPosition
-          )
-        {
-            var transformedPos = voxelWorldPosition + _offset2;
-
-            var dirtDepth = Mathf.FloorToInt(
-                Mathf.PerlinNoise(
-                    transformedPos.x * 0.0316f,
-                    transformedPos.z * 0.0356f
-                  ) * 5
-              ) + 1;
-
-            if (voxelWorldPosition.y > heightAtThisPosition)
+            int dirtDepth = Mathf.FloorToInt(
+                EvaluatePerlin(x, z, 0.1F, 0.1F, 300000, 300000, 2, 4)
+              );
+            int depth = h - y;
+            if (depth < 0)
             {
                 return VoxelType.AIR;
             }
-
-            if (voxelWorldPosition.y == heightAtThisPosition)
+            if (depth == 0)
             {
                 return VoxelType.GRASS;
             }
-
-            if (heightAtThisPosition - voxelWorldPosition.y < dirtDepth)
+            if (depth < dirtDepth)
             {
                 return VoxelType.DIRT;
             }
-
-            return VoxelType.STONE;
+            else
+            {
+                return VoxelType.STONE;
+            }
         }
 
-        public static int GetHeight(int x, int z)
+        // Super important that this is smooth. Also, ideally [0, 1] is equally common.
+        public static float GetHeightSlider(int x, int z)
         {
-            return GetHeight(new Vector3(x, 0, z));
+            float p1 = EvaluatePerlin(x, z, 0.007F, 0.007F, 1_000, 1_000, 0, 1);
+            float p2 = EvaluatePerlin(x, z, 0.006F, 0.008F, 2_000, 2_000, 0, 1);
+            float p3 = EvaluatePerlin(x, z, 0.010F, 0.002F, 4_000, 4_000, 0, 1);
+            float p4 = EvaluatePerlin(x, z, 0.015F, 0.010F, 3_000, 3_000, 0, 1);
+            return (Mathf.Min(p1, p3) + Mathf.Max(p2, p4)) * 0.5F;
         }
 
-		public static int GetHeight(Vector3 voxelWorldPosition)
-		{
-			var swappedVoxelWorldPosition = new Vector3(voxelWorldPosition.z, 0, voxelWorldPosition.x);
+        public static int GetHeight(int x, int z, float t)
+        {
+            Debug.Assert(t is >= 0 and <= 1);
 
-			var biomePos1 = Vector3.Scale(voxelWorldPosition + _offset, new Vector3(+0.005F, -0.001F));
-			var biomePos2 = Vector3.Scale(swappedVoxelWorldPosition + _offset2, new Vector3(-0.004F, -0.003F));
-			var cliffPos = Vector3.Scale(voxelWorldPosition + _offset2, new Vector3(-0.001F, +0.002F));
+            //return Mathf.FloorToInt(t * 100);
 
+            float height1 = 0;
+            float height2 = 0;
+            float heightStrength = -1;
 
-			var isCliffZone = Mathf.PerlinNoise(cliffPos.x, cliffPos.y) > 0.5F;
+            if (t > _PLATEAU_T + _PLATEAU_R)
+            {
+                height1 = GetPlateauHeight(x, z);
+            } else 
+            if (t > _PLATEAU_T - _PLATEAU_R)
+            {
+                height1 = GetHiHillsHeight(x, z);
+                height2 = GetPlateauHeight(x, z);
+                heightStrength = EvaluateLine(t, _PLATEAU_T, _PLATEAU_R);
+            } else 
+            if (t > _HI_HILLS_T + _HI_HILLS_R)
+            {
+                height1 = GetHiHillsHeight(x, z);
+            } else
+            if (t > _HI_HILLS_T - _HI_HILLS_R)
+            {
+                height1 = GetFlatlandsHeight(x, z);
+                height2 = GetHiHillsHeight(x, z);
+                heightStrength = EvaluateLine(t, _HI_HILLS_T, _HI_HILLS_R);
+            } else
+            if (t > _FLATLANDS_T + _FLATLANDS_R)
+            {
+                height1 = GetFlatlandsHeight(x, z);
+            } else
+            if (t > _FLATLANDS_T - _FLATLANDS_R)
+            {
+                height1 = GetLoHillsHeight(x, z);
+                height2 = GetFlatlandsHeight(x, z);
+                heightStrength = EvaluateLine(t, _FLATLANDS_T, _FLATLANDS_R);
+            }
+            else
+            {
+                height1 = GetLoHillsHeight(x, z);
+            }
 
-			var biomeVal = (Mathf.PerlinNoise(biomePos1.x, biomePos1.y) + Mathf.PerlinNoise(biomePos2.x, biomePos2.y)) * 0.5F;
-			if (biomeVal < 0.40F)
-			{
-				return GetFlatlandHeight(voxelWorldPosition, swappedVoxelWorldPosition);
-			}
-			else
-			if (isCliffZone)
-			{
-				if (biomeVal < 0.6F)
-				{
-					return GetHillsHeight(biomeVal, voxelWorldPosition, swappedVoxelWorldPosition);
-				}
-				else
-				{
-					return GetPlateauHeight(biomeVal, voxelWorldPosition, swappedVoxelWorldPosition);
-				}
-			}
-			else
-			{
-				if (biomeVal < 0.7F)
-				{
-					return GetHillsHeight(biomeVal, voxelWorldPosition, swappedVoxelWorldPosition);
-				}
-				else
-				{
-					return GetMountainsHeight(biomeVal, voxelWorldPosition, swappedVoxelWorldPosition);
-				}
-			}
-		}
-	}
+            if (heightStrength < 0)
+            {
+                return Mathf.RoundToInt(height1);
+            }
+            else
+            {
+                return Mathf.RoundToInt(Mathf.Lerp(height1, height2, heightStrength));
+            }
+        }
+
+        private static float GetFlatlandsHeight(int x, int z)
+        {
+            float p1 = EvaluatePerlin(x, z, 0.01F, 0.02F, 0, 0, 0, 4);
+            float p2 = EvaluatePerlin(x, z, 0.01F, 0.01F, 1000, 1000, 0, 4);
+
+            return (p1 + p2) * 0.5F;
+        }
+
+        private static float GetLoHillsHeight(int x, int z)
+        {
+            float p1 = EvaluatePerlin(x, z, 0.03F, 0.01F, 50000, 50000, 0, 15);
+            float p2 = EvaluatePerlin(x, z, 0.05F, 0.03F, 51000, 51000, 0, 15);
+
+            return (p1 + p2) * 0.5F;
+        }
+
+        private static float GetHiHillsHeight(int x, int z)
+        {
+            float p1 = EvaluatePerlin(x, z, 0.04F, 0.01F, 100000, 100000, 15, 40);
+            float p2 = EvaluatePerlin(x, z, 0.03F, 0.04F, 101000, 101000, 1, 15);
+
+            return p1 + p2;
+        }
+
+        private static float GetPlateauHeight(int x, int z)
+        {
+            float p1 = EvaluatePerlin(x, z, 0.01F, 0.03F, 150000, 150000, 40, 60);
+            float p2 = EvaluatePerlin(x, z, 0.07F, 0.05F, 151000, 153000, 1, 10);
+
+            return p1 + p2;
+        }
+
+        private static float EvaluatePerlin(
+            int x, 
+            int z, 
+            float xF, 
+            float zF,
+            float xOffset,
+            float zOffset,
+            float minY,
+            float maxY
+          )
+        {
+            // Perlin noise is symmetric around the origin, so offset the sample space.
+            xOffset += _PERLIN_OFFSET;
+            zOffset += _PERLIN_OFFSET;
+            return Mathf.Lerp(minY, maxY, Mathf.PerlinNoise(x * xF + xOffset, z * zF + zOffset));
+        }
+
+        // Evaluates a sigmoid centered on c where 99% of y occurs within c +/- r.
+        private static float EvaluateSigmoid(float x, float c, float r)
+        {
+            float dx = x - c;
+            return 1 / (1 + Mathf.Exp(-_SIGMOID99_K * dx / r));
+        }
+
+        // Evaluates a line centered on c where +/-1 occurs on c +/- r.
+        private static float EvaluateLine(float x, float c, float r)
+        {
+            float dx = x - c;
+            return Mathf.Clamp(dx / r, -1, +1) * 0.5F + 0.5F;
+        }
+
+        //private static float EvaluatePower(float t, float c, float r)
+        //{
+        //    float x = Mathf.Clamp01((t - (c - r)) / (2F * r));
+        //    return Mathf.Pow(x, _POWER_K);
+        //}
+
+        private const float _FLATLANDS_T = 0.2F;
+        private const float _HI_HILLS_T = 0.6F;
+        private const float _PLATEAU_T = 0.8F;
+
+        private const float _FLATLANDS_R = 0.05F;
+        private const float _HI_HILLS_R = 0.15F;
+        private const float _PLATEAU_R = 0.05F;
+
+        private const float _PERLIN_OFFSET = 10000.11F;
+
+        private const float _SIGMOID99_K = 5.293305F;
+    }
 }

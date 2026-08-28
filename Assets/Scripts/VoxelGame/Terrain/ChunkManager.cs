@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using VoxelGame.Pooling;
@@ -32,7 +33,7 @@ namespace VoxelGame.Terrain
         [SerializeField]
         private float _chunkRefreshCooldown = 1;
         [SerializeField]
-        private int _maxActiveTasks = 8;
+        private int _maxActiveTasks = -1;
         [SerializeField]
         private int _maxTaskExecutesPerSecond = 8;
         [SerializeField]
@@ -151,7 +152,7 @@ namespace VoxelGame.Terrain
             }
 
             Random.InitState(_seed);
-            BiomeLogic.Init();
+
 			ChunkConfig.Init(_chunkSize);
 
             _collisionRadiusSqr = _collisionRadius * _collisionRadius;
@@ -163,6 +164,16 @@ namespace VoxelGame.Terrain
             int sizeY = _ratioY * 2 + 1;
             _neighborY = new Chunk[sizeX];
             _neighborZ = new Chunk[sizeY, sizeX];
+
+            if (_maxActiveTasks <= 0)
+            {
+                _maxActiveTasks = Math.Clamp(
+                    Environment.ProcessorCount - 1,
+                    1,
+                    8
+                  );
+            }
+            Debug.Log($"Num workers: {_maxActiveTasks}");
 
             _scheduler = new ChunkTaskScheduler(_maxActiveTasks, _maxTaskExecutesPerSecond, _maxLazyExecutesPerFrame);
 

@@ -94,15 +94,21 @@ namespace VoxelGame.Terrain.ChunkTask
             for (int x = 0; x < ChunkConfig.PSizeX; ++x)
             {
                 int heightIndex = x + z * ChunkConfig.PSizeX;
-                int height = BiomeLogic.GetHeight(
-                    chunkPosition.x + x - 1,
-                    chunkPosition.z + z - 1
-                  );
-                height += 10; // Tree height upper estimate.
+
+                int sampleX = chunkPosition.x + x - 1;
+                int sampleZ = chunkPosition.z + z - 1;
+
+                float heightSlider = BiomeLogic.GetHeightSlider(sampleX, sampleZ);
+
+                int height = BiomeLogic.GetHeight(sampleX, sampleZ, heightSlider);
                 pooledIn.Heights[heightIndex] = height;
                 minHeight = Mathf.Min(minHeight, height);
                 maxHeight = Mathf.Max(maxHeight, height);
             }
+
+            // Add a conservative tree height estimate.
+            minHeight += 10;
+            maxHeight += 10;
 
             // VOXEL CALCULATION
             bool isMonotype = true;
@@ -120,7 +126,7 @@ namespace VoxelGame.Terrain.ChunkTask
 
                     Vector3Int position = chunkPosition + new Vector3Int(x, y, z);
                     int voxelTypeIndex = x + y * ChunkConfig.StrideY + z * ChunkConfig.StrideZ;
-                    VoxelType voxelType = BiomeLogic.GetVoxelType(position, height);
+                    VoxelType voxelType = BiomeLogic.GetVoxelType(position.x, position.y, position.z, height);
 
                     pooledIn.PolytypeChunkData.Data[voxelTypeIndex] = voxelType;
 

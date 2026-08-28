@@ -60,7 +60,9 @@ namespace VoxelGame.Saving
 		}
 
 		public void Save()
-		{ 
+		{
+            PlayerPrefs.DeleteAll();
+
 			PlayerPrefs.SetInt("HAS_SAVE", 1);
 
             PlayerPrefs.SetString("VERSION", _version);
