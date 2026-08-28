@@ -4,9 +4,7 @@ Shader "Example/Sample2DArrayTexture"
 {
     Properties
     {
-        _MyArr ("Tex", 2DArray) = "" {}
-        //_SliceRange ("Slices", Range(0,16)) = 6
-        //_UVScale ("UVScale", Float) = 1.0
+        _TextureArray ("Texture Array", 2DArray) = "" {}
     }
     SubShader
     {
@@ -28,8 +26,8 @@ Shader "Example/Sample2DArrayTexture"
 				float lighting : TEXCOORD1;
 		    };
 
-		    TEXTURE2D_ARRAY(_MyArr);
-		    SAMPLER(sampler_MyArr);
+		    TEXTURE2D_ARRAY(_TextureArray);
+		    SAMPLER(sampler_TextureArray);
 
 		    v2f vert(float4 positionOS : POSITION, float3 normalOS : NORMAL, float3 uv : TEXCOORD0)
 		    {
@@ -54,8 +52,8 @@ Shader "Example/Sample2DArrayTexture"
 		    {
 		        float3 color =
 		            SAMPLE_TEXTURE2D_ARRAY(
-		                _MyArr,
-		                sampler_MyArr,
+		                _TextureArray,
+		                sampler_TextureArray,
 		                i.uv.xy,
 		                i.uv.z
 		            ).rgb;

@@ -6,5 +6,7 @@ namespace VoxelGame.Terrain
 		DIRT,
 		GRASS,
 		STONE,
+		OAK_LOG,
+		OAK_LEAVES
 	}
 }

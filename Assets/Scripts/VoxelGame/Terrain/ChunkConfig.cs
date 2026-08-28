@@ -24,7 +24,7 @@ namespace VoxelGame.Terrain
         public static int PStrideY => _pStrideY;
         public static int PStrideZ => _pStrideZ;
 
-        public static int PoissonDiskRadius = 5;
+        public static int PoissonDiskRadius = 10;
 
         public static void Init(Vector3Int size)
         {
@@ -56,6 +56,13 @@ namespace VoxelGame.Terrain
 
             _isInitialized = true;
         }
+
+#if UNITY_EDITOR
+        public static void Reset()
+        {
+            _isInitialized = false;
+        }
+#endif
 
         private static Vector3Int _size;
         private static int _sizeX;

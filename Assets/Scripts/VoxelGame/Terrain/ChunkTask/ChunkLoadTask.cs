@@ -98,7 +98,7 @@ namespace VoxelGame.Terrain.ChunkTask
                 int sampleX = chunkPosition.x + x - 1;
                 int sampleZ = chunkPosition.z + z - 1;
 
-                float heightSlider = BiomeLogic.GetHeightSlider(sampleX, sampleZ);
+                float heightSlider = BiomeLogic.GetBiomeSlider(sampleX, sampleZ);
 
                 int height = BiomeLogic.GetHeight(sampleX, sampleZ, heightSlider);
                 pooledIn.Heights[heightIndex] = height;
@@ -167,8 +167,16 @@ namespace VoxelGame.Terrain.ChunkTask
                 int outerIndex = x + z * diskPSizeX;
                 int outerValue = pooledIn.PoissonDisk[outerIndex];
 
-                for (int dz = -ChunkConfig.PoissonDiskRadius; dz <= +ChunkConfig.PoissonDiskRadius; ++dz)
-                for (int dx = -ChunkConfig.PoissonDiskRadius; dx <= +ChunkConfig.PoissonDiskRadius; ++dx)
+                int worldX = input.Position.x + x - ChunkConfig.PoissonDiskRadius;
+                int worldZ = input.Position.z + z - ChunkConfig.PoissonDiskRadius;
+                float t = BiomeLogic.GetBiomeSlider(worldX, worldZ);
+                if (!BiomeLogic.TryGetMinTreeDistance(worldX, worldZ, t, out int radius))
+                {
+                    continue;
+                }
+
+                for (int dz = -radius; dz <= +radius; ++dz)
+                for (int dx = -radius; dx <= +radius; ++dx)
                 {
                     if (dx == 0 && dz == 0)
                     {
