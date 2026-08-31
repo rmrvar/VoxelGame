@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using static VoxelGame.Terrain.VoxelData;
 
@@ -74,7 +75,8 @@ namespace VoxelGame.Terrain.Meshing
                     int ym1 = y - 1;
 
                     int i2 = xm1 + ym1 * sliceSize.x;
-                    if (voxels[i1 + dStride * (normalSign == 0 ? +1 : -1)] == VoxelType.AIR)
+                    VoxelType backType = voxels[i1 + dStride * (normalSign == 0 ? +1 : -1)];
+                    if (backType.IsTransparent() || backType.IsCutout())
                     {
 						// The back voxel is see-through so this quad can potentially be drawn.
 					    types[i2] = voxels[i1];
@@ -182,9 +184,13 @@ namespace VoxelGame.Terrain.Meshing
 
             workspace.Normals.AddRange(Normals[faceIndex]);
 
+            List<int> quads = quad.Type.IsOpaque()
+                ? workspace.Quads1
+                : workspace.Quads2;
+
             for (int i = 0; i < 4; ++i)
             {
-				workspace.Quads.Add(workspace.Vertices.Count);
+                quads.Add(workspace.Vertices.Count);
 
                 Vector3 vertex = vertices[i];
                 Vector3 sliceVertex = ToSliceSpace(vertex, normalAxis);
@@ -223,11 +229,14 @@ namespace VoxelGame.Terrain.Meshing
             {
                 mesh.Clear();
             }
+
+            mesh.subMeshCount = 2;
             mesh.SetVertices(workspace.Vertices);
             mesh.SetNormals(workspace.Normals);
             mesh.SetUVs(0, workspace.UVs);
-            mesh.SetIndices(workspace.Quads, MeshTopology.Quads, 0);
-            mesh.RecalculateBounds(); // TODO: Investigate the necessity of this.
+            mesh.SetIndices(workspace.Quads1, MeshTopology.Quads, 0);
+            mesh.SetIndices(workspace.Quads2, MeshTopology.Quads, 1);
+            mesh.RecalculateBounds();
             return mesh;
         }
 

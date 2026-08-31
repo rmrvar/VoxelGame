@@ -28,5 +28,7 @@ MonoBehaviour:
   - {fileID: 2800000, guid: 6bca02c32519cd04ab76858f8a301ecc, type: 3}
   - {fileID: 2800000, guid: 6bca02c32519cd04ab76858f8a301ecc, type: 3}
   - {fileID: 2800000, guid: 6bca02c32519cd04ab76858f8a301ecc, type: 3}
-  _material: {fileID: 2100000, guid: 8e81240bf6e6cde43bfb4873d8975fff, type: 2}
+  _materials:
+  - {fileID: 2100000, guid: 8e81240bf6e6cde43bfb4873d8975fff, type: 2}
+  - {fileID: 2100000, guid: 943c1e094883e304a9d4aed17ecf38a0, type: 2}
   _materialParamName: _TextureArray

@@ -14,6 +14,9 @@ namespace VoxelGame.Terrain
 		[field: SerializeField]
         public int Seed { get; private set; }
 
+        [SerializeField]
+        private bool _shouldLockTo60FPS = false;
+
         [SerializeField] 
         private bool _shouldLoad;
         [SerializeField] 
@@ -90,7 +93,7 @@ namespace VoxelGame.Terrain
                 new ChunkMeshTask(
                     chunk,
                     chunk.GetCancellationToken(),
-                    shouldRunInBackground: false,
+                    shouldRunInBackground: true,
                     isRemesh: true
                   )
               );
@@ -147,7 +150,11 @@ namespace VoxelGame.Terrain
 #endif
 			Instance = this;
 
-            Application.targetFrameRate = 60;
+            if (_shouldLockTo60FPS)
+            {
+                QualitySettings.vSyncCount = 0;
+                Application.targetFrameRate = -1;
+            }
 
             SaveSystem = new SaveSystem();
             if (_shouldLoad)

@@ -14,7 +14,7 @@ namespace VoxelGame.Terrain
         private Texture[] _textures;
 
         [SerializeField]
-        private Material _material;
+        private Material[] _materials;
         [SerializeField]
         private string _materialParamName;
 
@@ -71,9 +71,13 @@ namespace VoxelGame.Terrain
             string path = $"{folderPath}/{name}_Output.asset";
             AssetDatabase.CreateAsset(textureArray, path);
 
-            if (_material != null)
+            foreach (Material material in _materials)
             {
-                _material.SetTexture(_materialParamName, textureArray);
+                if (material == null)
+                {
+                    continue;
+                }
+                material.SetTexture(_materialParamName, textureArray);
             }
         }
 

@@ -12,7 +12,8 @@ namespace VoxelGame.Terrain.Meshing
         public readonly List<Vector3> Vertices;
         public readonly List<Vector3> UVs;
         public readonly List<Vector3> Normals;
-        public readonly List<int> Quads;
+        public readonly List<int> Quads1; // Opaque
+        public readonly List<int> Quads2; // Cutout
 
         public GreedyMesherWorkspace()
         {
@@ -30,7 +31,8 @@ namespace VoxelGame.Terrain.Meshing
             Vertices = new List<Vector3>(initialListSize);
             UVs = new List<Vector3>(initialListSize);
             Normals = new List<Vector3>(initialListSize);
-            Quads = new List<int>(initialListSize);
+            Quads1 = new List<int>(initialListSize);
+            Quads2 = new List<int>(initialListSize);
         }
 
         public void Clear()
@@ -39,7 +41,8 @@ namespace VoxelGame.Terrain.Meshing
             Vertices.Clear();
             UVs.Clear();
             Normals.Clear();
-            Quads.Clear();
+            Quads1.Clear();
+            Quads2.Clear();
         }
     }
 }
