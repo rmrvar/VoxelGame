@@ -1,31 +1,45 @@
-using System;
-using System.Collections.Generic;
 #if UNITY_EDITOR
-using UnityEditor;
-#endif
+
 using UnityEngine;
-using VoxelGame.Terrain;
 using VoxelGame.Terrain.Meshing;
 
-namespace VoxelGame.Vegetation
+namespace VoxelGame.Terrain.Vegetation
 {
-    [ExecuteInEditMode()]
-    public class VegetationVoxel : MonoBehaviour
+    [ExecuteInEditMode]
+    public class VegetationDataAuthoringNode : MonoBehaviour
     {
-        [SerializeField]
-        private VoxelType _voxelType;
+        [field: SerializeField]
+        public VoxelType Type { get; private set; }
 
-#if UNITY_EDITOR
+        public Vector3Int LocalPosition => new(
+            Mathf.FloorToInt(transform.localPosition.x),
+            Mathf.FloorToInt(transform.localPosition.y),
+            Mathf.FloorToInt(transform.localPosition.z)
+          );
+
         private void OnValidate()
         {
-            transform.localPosition = GetClampedLocalPosition();
+            UpdateGraphics();
+        }
+
+        private void Update()
+        {
+            if (Application.isPlaying)
+            {
+                Debug.LogAssertion(
+                    $"{nameof(VegetationDataAuthoringNode)} is meant to be used only in the Editor and not in Play Mode!"
+                );
+                return;
+            }
+
             UpdateGraphics();
         }
 
         // Veeeery hacky...
         private void UpdateGraphics()
         {
-            if (_voxelType != _oldVoxelType || !_hasVoxelType)
+            transform.localPosition = LocalPosition;
+            if (Type != _oldVoxelType || !_hasVoxelType)
             {
                 // Start hacky stuff.
                 ChunkConfig.Reset();
@@ -48,7 +62,7 @@ namespace VoxelGame.Vegetation
                     VoxelType.AIR,
                     VoxelType.AIR,
                     VoxelType.AIR,
-                    _voxelType,
+                    Type,
                     VoxelType.AIR,
                     VoxelType.AIR,
                     VoxelType.AIR,
@@ -75,35 +89,14 @@ namespace VoxelGame.Vegetation
                 // Finish the hacky stuff.
                 ChunkConfig.Reset();
 
-                _oldVoxelType = _voxelType;
+                _oldVoxelType = Type;
                 _hasVoxelType = true;
             }
         }
 
-        private void Update()
-        {
-            if (Application.isPlaying)
-            {
-                Debug.LogAssertion(
-                    $"{nameof(VegetationVoxel)} is meant to be used only in the Editor and not in Play Mode!"
-                  );
-                return;
-            }
-
-            transform.localPosition = GetClampedLocalPosition();
-            UpdateGraphics();
-        }
-        private Vector3Int GetClampedLocalPosition()
-        {
-            return new(
-                Mathf.FloorToInt(transform.localPosition.x),
-                Mathf.FloorToInt(transform.localPosition.y),
-                Mathf.FloorToInt(transform.localPosition.z)
-              );
-        }
-
         private VoxelType _oldVoxelType;
         private bool _hasVoxelType;
-#endif
     }
 }
+
+#endif

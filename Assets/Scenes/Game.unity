@@ -334,8 +334,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0c356fb447aed0459faa47db9afcdb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _seed: 0
-  _shouldLoad: 0
+  <Seed>k__BackingField: 0
+  _shouldLoad: 1
   _shouldSave: 1
   _chunkSize: {x: 50, y: 50, z: 50}
   _loadOrigin: {fileID: 1828581181}
@@ -349,6 +349,24 @@ MonoBehaviour:
   _chunkMonoPrefab: {fileID: 353645850060703695, guid: 5d78c3d49de314747921acdf12eb90d4, type: 3}
   _chunkMonoPoolRefillThreshold: 1000
   _chunkMonoPoolRefillRate: 20
+  VegetationSystem:
+    _treeSOs:
+    - {fileID: 11400000, guid: c6dd5033e1fd9a84691d430fef59c672, type: 2}
+    - {fileID: 11400000, guid: 136953d32f28356439c19c7dfc35d25b, type: 2}
+    - {fileID: 11400000, guid: 70202898008cc5f4f977bf2d84df2a7d, type: 2}
+    - {fileID: 11400000, guid: 2dd7b4d6d842c8644ae8d6d091d4e114, type: 2}
+    - {fileID: 11400000, guid: adaf8b37a71985f4ea10865f8b5efa47, type: 2}
+    - {fileID: 11400000, guid: 9b90243095fcb7a45b5898d958c57ff5, type: 2}
+    - {fileID: 11400000, guid: 578ded3112fd4b64594390098ed90487, type: 2}
+    - {fileID: 11400000, guid: 47b9679cc638fd54a93265acbdda6fb3, type: 2}
+    - {fileID: 11400000, guid: de71229a55abcdb4c8999f804bf7f005, type: 2}
+    - {fileID: 11400000, guid: cb5c0d1241bfb7d4fb3bd71728a0f2d9, type: 2}
+    - {fileID: 11400000, guid: 053a377d72e8ef344a7570a22c7d5751, type: 2}
+    - {fileID: 11400000, guid: 4ab713fc31d5dba4f8fff5889ddd681d, type: 2}
+    - {fileID: 11400000, guid: bc4f40de70e84b248bf6ca64c33977fa, type: 2}
+    - {fileID: 11400000, guid: b6b71c2be0da5974ea4941f74d537c13, type: 2}
+    - {fileID: 11400000, guid: f314837cf605baa43930074a6b754abc, type: 2}
+    _grassSOs: []
 --- !u!4 &1531652811
 Transform:
   m_ObjectHideFlags: 0

@@ -4,14 +4,15 @@ using UnityEngine;
 using VoxelGame.Pooling;
 using VoxelGame.Saving;
 using VoxelGame.Terrain.ChunkTask;
+using VoxelGame.Terrain.Vegetation;
 using Random = UnityEngine.Random;
 
 namespace VoxelGame.Terrain
 {
 	public class ChunkManager : MonoBehaviour
 	{
-		[SerializeField]
-        private int _seed;
+		[field: SerializeField]
+        public int Seed { get; private set; }
 
         [SerializeField] 
         private bool _shouldLoad;
@@ -46,6 +47,9 @@ namespace VoxelGame.Terrain
         private int _chunkMonoPoolRefillThreshold = 1000;
         [SerializeField]
         private int _chunkMonoPoolRefillRate = 20;
+
+        [field: SerializeField]
+        public VegetationSystem VegetationSystem;
 
         public static ChunkManager Instance { get; private set; }
 
@@ -151,7 +155,7 @@ namespace VoxelGame.Terrain
                 SaveSystem.Load();
             }
 
-            Random.InitState(_seed);
+            Random.InitState(Seed);
 
 			ChunkConfig.Init(_chunkSize);
 
@@ -184,6 +188,8 @@ namespace VoxelGame.Terrain
 
             _chunkMonoPoolRefillCooldown = 1f / _chunkMonoPoolRefillRate;
             _chunkMonoPoolRefillTimer = _chunkMonoPoolRefillCooldown;
+
+            VegetationSystem.Init();
         }
 
         private void OnDestroy()
@@ -329,5 +335,7 @@ namespace VoxelGame.Terrain
 
         private Vector3Int _currChunkId;
         private Vector3Int _prevChunkId;
+
+        private VegetationData[] _vegetationDatas;
     }
 }

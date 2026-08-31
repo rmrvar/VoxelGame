@@ -24,7 +24,15 @@ namespace VoxelGame.Terrain
         public static int PStrideY => _pStrideY;
         public static int PStrideZ => _pStrideZ;
 
-        public static int PoissonDiskRadius = 10;
+        public const int PoissonDiskRadius = 10;
+
+        public static int PoissonDiskSizeX { get; private set; }
+        public static int PoissonDiskSizeZ { get; private set; }
+        public static int PoissonDiskVolume { get; private set; }
+
+        public static int HeightmapSizeX { get; private set; }
+        public static int HeightmapSizeZ { get; private set; }
+        public static int HeightmapVolume { get; private set; }
 
         public static void Init(Vector3Int size)
         {
@@ -55,6 +63,13 @@ namespace VoxelGame.Terrain
             _pStrideZ = _pSizeX * _pSizeY;
 
             _isInitialized = true;
+
+            PoissonDiskSizeX = 4 * PoissonDiskRadius + SizeX;
+            PoissonDiskSizeZ = 4 * PoissonDiskRadius + SizeZ;
+            PoissonDiskVolume = PoissonDiskSizeX * PoissonDiskSizeZ;
+            HeightmapSizeX = 2 * PoissonDiskRadius + SizeX;
+            HeightmapSizeZ = 2 * PoissonDiskRadius + SizeZ;
+            HeightmapVolume = HeightmapSizeX * HeightmapSizeZ;
         }
 
 #if UNITY_EDITOR

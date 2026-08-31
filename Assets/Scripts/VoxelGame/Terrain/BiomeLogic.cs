@@ -29,7 +29,7 @@ namespace VoxelGame.Terrain
         }
 
         // Super important that this is smooth. Also, ideally [0, 1] is equally common.
-        public static float GetBiomeSlider(int x, int z)
+        public static float GetSlider(int x, int z)
         {
             float p1 = EvaluatePerlin(x, z, 0.007F, 0.007F, 1_000, 1_000, 0, 1);
             float p2 = EvaluatePerlin(x, z, 0.006F, 0.008F, 2_000, 2_000, 0, 1);

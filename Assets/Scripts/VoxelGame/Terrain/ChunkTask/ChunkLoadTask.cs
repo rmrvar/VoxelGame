@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using UnityEngine;
+using VoxelGame.Terrain.Vegetation;
 
 namespace VoxelGame.Terrain.ChunkTask
 {
@@ -65,7 +66,11 @@ namespace VoxelGame.Terrain.ChunkTask
                 _isSaveDataInit = true;
             }
 
-            return new ChunkLoadTaskIn(Chunk.Position, _saveData);
+            return new ChunkLoadTaskIn(
+                ChunkManager.Instance.Seed,
+                Chunk.Position, 
+                _saveData
+              );
         }
 
         protected override ChunkLoadTaskOut Execute(ChunkLoadTaskIn input, CancellationToken cancellationToken)
@@ -90,24 +95,33 @@ namespace VoxelGame.Terrain.ChunkTask
             int minHeight = int.MaxValue;
             int maxHeight = int.MinValue;
 
-            for (int z = 0; z < ChunkConfig.PSizeZ; ++z)
-            for (int x = 0; x < ChunkConfig.PSizeX; ++x)
+            int poissonRadius = ChunkConfig.PoissonDiskRadius;
+
+            for (int z = 0; z < ChunkConfig.HeightmapSizeZ; ++z)
+            for (int x = 0; x < ChunkConfig.HeightmapSizeX; ++x)
             {
-                int heightIndex = x + z * ChunkConfig.PSizeX;
+                int heightIndex = x + z * ChunkConfig.HeightmapSizeX;
 
-                int sampleX = chunkPosition.x + x - 1;
-                int sampleZ = chunkPosition.z + z - 1;
+                int worldX = chunkPosition.x + x - poissonRadius;
+                int worldZ = chunkPosition.z + z - poissonRadius;
 
-                float heightSlider = BiomeLogic.GetBiomeSlider(sampleX, sampleZ);
+                float slider = BiomeLogic.GetSlider(worldX, worldZ);
 
-                int height = BiomeLogic.GetHeight(sampleX, sampleZ, heightSlider);
-                pooledIn.Heights[heightIndex] = height;
-                minHeight = Mathf.Min(minHeight, height);
-                maxHeight = Mathf.Max(maxHeight, height);
+                int height = BiomeLogic.GetHeight(worldX, worldZ, slider);
+                pooledIn.Slidermap[heightIndex] = slider;
+                pooledIn.Heightmap[heightIndex] = height;
+                
+                if (minHeight > height)
+                {
+                    minHeight = height;
+                }
+                if (maxHeight < height)
+                {
+                    maxHeight = height;
+                }
             }
 
             // Add a conservative tree height estimate.
-            minHeight += 10;
             maxHeight += 10;
 
             // VOXEL CALCULATION
@@ -115,28 +129,29 @@ namespace VoxelGame.Terrain.ChunkTask
             VoxelType? monotype = null;
 
             for (int z = 0; z < ChunkConfig.SizeZ; ++z)
-            for (int y = 0; y < ChunkConfig.SizeY; ++y)
+            for (int x = 0; x < ChunkConfig.SizeX; ++x)
             {
-                int heightIndex0 = (z + 1) * ChunkConfig.PSizeX;
+                int heightIndex = (x + poissonRadius) + (z + poissonRadius) * ChunkConfig.HeightmapSizeX;
+                int height = pooledIn.Heightmap[heightIndex];
 
-                for (int x = 0; x < ChunkConfig.SizeX; ++x)
+                int worldX = chunkPosition.x + x;
+                int worldZ = chunkPosition.z + z;
+                
+                for (int y = 0; y < ChunkConfig.SizeY; ++y)
                 {
-                    int heightIndex = heightIndex0 + (x + 1);
-                    int height = pooledIn.Heights[heightIndex];
+                    int worldY = chunkPosition.y + y;
 
-                    Vector3Int position = chunkPosition + new Vector3Int(x, y, z);
-                    int voxelTypeIndex = x + y * ChunkConfig.StrideY + z * ChunkConfig.StrideZ;
-                    VoxelType voxelType = BiomeLogic.GetVoxelType(position.x, position.y, position.z, height);
-
-                    pooledIn.PolytypeChunkData.Data[voxelTypeIndex] = voxelType;
+                    int typeIndex = x + y * ChunkConfig.StrideY + z * ChunkConfig.StrideZ;
+                    VoxelType type = BiomeLogic.GetVoxelType(worldX, worldY, worldZ, height);
+                    pooledIn.PolytypeChunkData.Data[typeIndex] = type;
 
                     if (isMonotype)
                     {
                         if (monotype == null)
                         {
-                            monotype = voxelType;
+                            monotype = type;
                         } else
-                        if (monotype != voxelType)
+                        if (monotype != type)
                         {
                             isMonotype = false;
                         }
@@ -145,35 +160,37 @@ namespace VoxelGame.Terrain.ChunkTask
             }
 
             // TREE PLACEMENT
-            int diskPSizeX = 4 * ChunkConfig.PoissonDiskRadius + ChunkConfig.SizeX;
-            int diskPSizeZ = 4 * ChunkConfig.PoissonDiskRadius + ChunkConfig.SizeZ;
-            for (int z = 0; z < diskPSizeZ; ++z)
-            for (int x = 0; x < diskPSizeX; ++x)
+            for (int z = 0; z < ChunkConfig.PoissonDiskSizeZ; ++z)
+            for (int x = 0; x < ChunkConfig.PoissonDiskSizeX; ++x)
             {
-                int i = x + z * diskPSizeX;
-                int worldX = input.Position.x + x - ChunkConfig.PoissonDiskRadius;
-                int worldZ = input.Position.z + z - ChunkConfig.PoissonDiskRadius;
+                int i = x + z * ChunkConfig.PoissonDiskSizeX;
+                int worldX = chunkPosition.x + x - poissonRadius;
+                int worldZ = chunkPosition.z + z - poissonRadius;
 
-                pooledIn.PoissonDisk[i] = Hash(worldX, worldZ);
+                pooledIn.PoissonDisk[i] = GetTreeRangeHash(worldX, worldZ, input.Seed);
             }
 
-            int startX = ChunkConfig.PoissonDiskRadius;
-            int startZ = ChunkConfig.PoissonDiskRadius;
-            int endX = diskPSizeX - ChunkConfig.PoissonDiskRadius;
-            int endZ = diskPSizeZ - ChunkConfig.PoissonDiskRadius;
-            for (int z = startZ; z < endZ; ++z)
-            for (int x = startX; x < endX; ++x)
+            int endX = ChunkConfig.PoissonDiskSizeX - poissonRadius;
+            int endZ = ChunkConfig.PoissonDiskSizeZ - poissonRadius;
+            for (int z = poissonRadius; z < endZ; ++z)
+            for (int x = poissonRadius; x < endX; ++x)
             {
-                int outerIndex = x + z * diskPSizeX;
-                int outerValue = pooledIn.PoissonDisk[outerIndex];
+                int heightX = x - poissonRadius;
+                int heightZ = z - poissonRadius;
+                int localX = heightX - poissonRadius;
+                int localZ = heightZ - poissonRadius;
+                int worldX = chunkPosition.x + localX;
+                int worldZ = chunkPosition.z + localZ;
 
-                int worldX = input.Position.x + x - ChunkConfig.PoissonDiskRadius;
-                int worldZ = input.Position.z + z - ChunkConfig.PoissonDiskRadius;
-                float t = BiomeLogic.GetBiomeSlider(worldX, worldZ);
-                if (!BiomeLogic.TryGetMinTreeDistance(worldX, worldZ, t, out int radius))
+                int heightIndex = heightX + heightZ * ChunkConfig.HeightmapSizeX;
+                float slider = input.PooledIn.Slidermap[heightIndex];
+                if (!BiomeLogic.TryGetMinTreeDistance(worldX, worldZ, slider, out int radius))
                 {
                     continue;
                 }
+
+                int outerIndex = x + z * ChunkConfig.PoissonDiskSizeX;
+                int outerValue = pooledIn.PoissonDisk[outerIndex];
 
                 for (int dz = -radius; dz <= +radius; ++dz)
                 for (int dx = -radius; dx <= +radius; ++dx)
@@ -185,7 +202,7 @@ namespace VoxelGame.Terrain.ChunkTask
 
                     int innerIndexX = x + dx;
                     int innerIndexZ = z + dz;
-                    int innerIndex = innerIndexX + innerIndexZ * diskPSizeX;
+                    int innerIndex = innerIndexX + innerIndexZ * ChunkConfig.PoissonDiskSizeX;
                     int innerValue = pooledIn.PoissonDisk[innerIndex];
                     if (innerValue >= outerValue)
                     {
@@ -194,25 +211,29 @@ namespace VoxelGame.Terrain.ChunkTask
                 }
 
                 // Tree exists. See if any part crosses border.
-                int realX = x - ChunkConfig.PoissonDiskRadius;
-                int realZ = z - ChunkConfig.PoissonDiskRadius;
+                int localY = input.PooledIn.Heightmap[heightIndex] + 1 - chunkPosition.y;
 
-                if (realX < 0 || realZ < 0 || realX >= ChunkConfig.SizeX || realZ >= ChunkConfig.SizeZ)
+                int treeIndex = Mathf.Abs(GetTreeIndexHash(worldX, worldZ, input.Seed)) % VegetationSystem.Instance.TreeCount;
+                VegetationData vegetationData = VegetationSystem.Instance.GetTree(treeIndex);
+                vegetationData.ForEach((i, x, y, z) =>
                 {
-                    continue; // Out of bounds in XZ.
-                }
+                    int newLocalX = localX + x;
+                    int newLocalY = localY + y;
+                    int newLocalZ = localZ + z;
 
-                int yIndex = (realX + 1) + (realZ + 1) * ChunkConfig.PSizeX;
-                int realY = pooledIn.Heights[yIndex] - input.Position.y + 1;
-                if (realY < 0 || realY >= ChunkConfig.SizeY)
-                {
-                    continue; // Out of bounds in Y.
-                }
+                    if (newLocalX < 0 || newLocalY < 0 || newLocalZ < 0 || newLocalX >= ChunkConfig.SizeX || newLocalY >= ChunkConfig.SizeY || newLocalZ >= ChunkConfig.SizeZ)
+                    {
+                        return; // Out of bounds.
+                    }
 
-                // Place a tree.
-                int polytypeIndex = realX + realY * ChunkConfig.StrideY + realZ * ChunkConfig.StrideZ;
-                pooledIn.PolytypeChunkData.Data[polytypeIndex] = VoxelType.STONE;
-                isMonotype = false;
+                    // Place a tree.
+                    int polytypeIndex = newLocalX + newLocalY * ChunkConfig.StrideY + newLocalZ * ChunkConfig.StrideZ;
+                    if (pooledIn.PolytypeChunkData.Data[polytypeIndex] == VoxelType.AIR)
+                    {
+                        pooledIn.PolytypeChunkData.Data[polytypeIndex] = vegetationData.GetType(i);
+                        isMonotype = false;
+                    }
+                });
 
                 end:;
             }
@@ -333,10 +354,23 @@ namespace VoxelGame.Terrain.ChunkTask
             ChunkManager.Instance.ScheduleMeshTask(chunk);
         }
 
-        private static int Hash(int x, int y)
+        private static int GetTreeRangeHash(int x, int z, int seed)
+        {
+            return Hash(x, z, seed, 1000);
+        }
+
+        private static int GetTreeIndexHash(int x, int z, int seed)
+        {
+            return Hash(x, z, seed, 2000);
+        }
+
+        private static int Hash(int x, int z, int seed, int salt)
         {
             uint h = (uint)x * 374761393u;
-            h += (uint)y * 668265263u;
+            h += (uint)z * 668265263u;
+            h += (uint)seed * 1442695041u;
+            h += (uint)salt * 2246822519u;
+
             h = (h ^ (h >> 13)) * 1274126177u;
             return (int)(h ^ (h >> 16));
         }
@@ -348,12 +382,14 @@ namespace VoxelGame.Terrain.ChunkTask
 
     public class ChunkLoadTaskIn : IDisposable
     {
-        public Vector3Int Position;
-        public byte[] SaveData;
-        public ChunkLoadTaskPooledIn PooledIn;
+        public readonly int Seed;
+        public readonly Vector3Int Position;
+        public readonly byte[] SaveData;
+        public readonly ChunkLoadTaskPooledIn PooledIn;
 
-        public ChunkLoadTaskIn(Vector3Int position, byte[] saveData)
+        public ChunkLoadTaskIn(int seed, Vector3Int position, byte[] saveData)
         {
+            Seed = seed;
             SaveData = saveData;
             Position = position;
             PooledIn = ChunkLoadTaskPooledIn.Pool.Borrow();

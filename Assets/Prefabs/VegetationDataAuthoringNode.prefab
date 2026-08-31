@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 8489750344711674368}
   - component: {fileID: 6365801000558778813}
   m_Layer: 0
-  m_Name: VegetationVoxel
+  m_Name: VegetationDataAuthoringNode
   m_TagString: EditorOnly
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
