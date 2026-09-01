@@ -7,7 +7,7 @@ namespace VoxelGame.Terrain.Meshing
 {
 	public static class GreedyMesher
     {
-        public static void Generate(VoxelType[] voxels, GreedyMesherWorkspace workspace)
+        public static void Generate(VoxelType[] voxels, MesherWorkspace workspace)
         {
 			for (int sliceNormalSign = 0; sliceNormalSign < 2; ++sliceNormalSign)
             for (int sliceNormalAxis = 0; sliceNormalAxis < 3; ++sliceNormalAxis)
@@ -21,7 +21,7 @@ namespace VoxelGame.Terrain.Meshing
             int normalAxis, 
             int normalSign,
             VoxelType[] voxels, 
-            GreedyMesherWorkspace workspace
+            MesherWorkspace workspace
           )
         {
             int faceIndex = GetFaceIndex(normalAxis, normalSign);
@@ -76,7 +76,9 @@ namespace VoxelGame.Terrain.Meshing
 
                     int i2 = xm1 + ym1 * sliceSize.x;
                     VoxelType backType = voxels[i1 + dStride * (normalSign == 0 ? +1 : -1)];
-                    if (backType.IsTransparent() || backType.IsCutout())
+                    VoxelType thisType = voxels[i1];
+                    //if (thisType.IsCube() && (backType.IsTransparent() || backType.IsCutoutGrass() || (backType.IsCutoutTree() && !thisType.IsCutoutTree())))
+                    if (thisType.IsCube() && (backType.IsTransparent() || backType.IsCutoutTree() || backType.IsCutoutGrass()))
                     {
 						// The back voxel is see-through so this quad can potentially be drawn.
 					    types[i2] = voxels[i1];
@@ -171,7 +173,7 @@ namespace VoxelGame.Terrain.Meshing
             int normalSign,
             int depth,
             Quad quad, 
-            GreedyMesherWorkspace workspace
+            MesherWorkspace workspace
           )
         {
             int w = quad.MaxX - quad.MinX;
@@ -217,27 +219,6 @@ namespace VoxelGame.Terrain.Meshing
                 uv.z += uvOffset;
                 workspace.UVs.Add(uv);
             }
-        }
-
-        public static Mesh GetMesh(GreedyMesherWorkspace workspace, Mesh mesh = null)
-        {
-            if (mesh == null)
-            {
-                mesh = new Mesh();
-            }
-            else
-            {
-                mesh.Clear();
-            }
-
-            mesh.subMeshCount = 2;
-            mesh.SetVertices(workspace.Vertices);
-            mesh.SetNormals(workspace.Normals);
-            mesh.SetUVs(0, workspace.UVs);
-            mesh.SetIndices(workspace.Quads1, MeshTopology.Quads, 0);
-            mesh.SetIndices(workspace.Quads2, MeshTopology.Quads, 1);
-            mesh.RecalculateBounds();
-            return mesh;
         }
 
         // Transforms from local space to slice space.

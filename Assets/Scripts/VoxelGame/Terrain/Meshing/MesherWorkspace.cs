@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace VoxelGame.Terrain.Meshing
 {
-    public sealed class GreedyMesherWorkspace
+    public sealed class MesherWorkspace
     {
         public readonly VoxelType[] Types;
         public readonly Quad[] GreedyQuads;
@@ -13,9 +13,10 @@ namespace VoxelGame.Terrain.Meshing
         public readonly List<Vector3> UVs;
         public readonly List<Vector3> Normals;
         public readonly List<int> Quads1; // Opaque
-        public readonly List<int> Quads2; // Cutout
+        public readonly List<int> Quads2; // Cutout Tree
+        public readonly List<int> Quads3; // Cutout Grass
 
-        public GreedyMesherWorkspace()
+        public MesherWorkspace()
         {
             Vector3Int chunkSize = ChunkConfig.Size;
 
@@ -33,16 +34,40 @@ namespace VoxelGame.Terrain.Meshing
             Normals = new List<Vector3>(initialListSize);
             Quads1 = new List<int>(initialListSize);
             Quads2 = new List<int>(initialListSize);
+            Quads3 = new List<int>(initialListSize);
         }
 
         public void Clear()
         {
-            // Arrays are overwritten completely by GreedyMesher.
+            // Arrays are overwritten completely by meshing.
             Vertices.Clear();
             UVs.Clear();
             Normals.Clear();
             Quads1.Clear();
             Quads2.Clear();
+            Quads3.Clear();
+        }
+
+        public Mesh GetMesh(Mesh mesh = null)
+        {
+            if (mesh == null)
+            {
+                mesh = new Mesh();
+            }
+            else
+            {
+                mesh.Clear();
+            }
+
+            mesh.subMeshCount = 3;
+            mesh.SetVertices(Vertices);
+            mesh.SetNormals(Normals);
+            mesh.SetUVs(0, UVs);
+            mesh.SetIndices(Quads1, MeshTopology.Quads, 0);
+            mesh.SetIndices(Quads2, MeshTopology.Quads, 1);
+            mesh.SetIndices(Quads3, MeshTopology.Quads, 2);
+            mesh.RecalculateBounds();
+            return mesh;
         }
     }
 }

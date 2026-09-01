@@ -6,7 +6,7 @@ namespace VoxelGame.Terrain.ChunkTask
     public sealed class ChunkMeshTaskPooledIn : IPoolable
     {
         public readonly VoxelType[] Voxels;
-        public readonly GreedyMesherWorkspace GreedyMesherWorkspace;
+        public readonly MesherWorkspace MesherWorkspace;
 
         public static readonly Pool<ChunkMeshTaskPooledIn> Pool = new(
             () => new ChunkMeshTaskPooledIn(),
@@ -16,7 +16,7 @@ namespace VoxelGame.Terrain.ChunkTask
         public void OnBorrowed()
         {
             // Voxels are overwritten completely by ChunkMeshTask.
-            GreedyMesherWorkspace.Clear();
+            MesherWorkspace.Clear();
         }
 
         public void OnReturned()
@@ -26,7 +26,7 @@ namespace VoxelGame.Terrain.ChunkTask
         private ChunkMeshTaskPooledIn()
         {
             Voxels = new VoxelType[ChunkConfig.PVolume];
-            GreedyMesherWorkspace = new GreedyMesherWorkspace();
+            MesherWorkspace = new MesherWorkspace();
         }
     }
 }

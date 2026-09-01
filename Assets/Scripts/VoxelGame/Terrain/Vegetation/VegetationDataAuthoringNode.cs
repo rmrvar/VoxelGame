@@ -28,7 +28,7 @@ namespace VoxelGame.Terrain.Vegetation
             {
                 Debug.LogAssertion(
                     $"{nameof(VegetationDataAuthoringNode)} is meant to be used only in the Editor and not in Play Mode!"
-                );
+                  );
                 return;
             }
 
@@ -78,13 +78,13 @@ namespace VoxelGame.Terrain.Vegetation
                     VoxelType.AIR,
                     VoxelType.AIR,
                 };
-                var workspace = new GreedyMesherWorkspace();
+                var workspace = new MesherWorkspace();
                 GreedyMesher.Generate(types, workspace);
 
                 MeshFilter meshFilter = GetComponentInChildren<MeshFilter>();
                 meshFilter.sharedMesh = new Mesh();
 
-                GreedyMesher.GetMesh(workspace, meshFilter.sharedMesh);
+                workspace.GetMesh(meshFilter.sharedMesh);
 
                 // Finish the hacky stuff.
                 ChunkConfig.Reset();

@@ -152,6 +152,10 @@ namespace VoxelGame.Terrain
 
             if (_shouldLockTo60FPS)
             {
+                Application.targetFrameRate = 60;
+            }
+            else
+            {
                 QualitySettings.vSyncCount = 0;
                 Application.targetFrameRate = -1;
             }

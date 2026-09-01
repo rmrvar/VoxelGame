@@ -67,5 +67,50 @@ namespace VoxelGame.Terrain
 			2,
 			0
 		};
-	}
+
+        public static Vector3[] CrossQuadVertices { get; } = new Vector3[8]
+        {
+            // QUAD 1: (0,0) -> (1,1)
+            new( 0, 0, 0 ),
+            new( 0, 1, 0 ),
+            new( 1, 1, 1 ),
+            new( 1, 0, 1 ),
+
+            // QUAD 2: (1,0) -> (0,1)
+            new( 1, 0, 0 ),
+            new( 1, 1, 0 ),
+            new( 0, 1, 1 ),
+            new( 0, 0, 1 ),
+        };
+
+        public static Vector3[] CrossQuadUVs3 { get; } = new Vector3[8]
+        {
+            // QUAD 1
+            new( 0, 0 ),
+            new( 0, 1 ),
+            new( 1, 1 ),
+            new( 1, 0 ),
+
+            // QUAD 2
+            new( 0, 0 ),
+            new( 0, 1 ),
+            new( 1, 1 ),
+            new( 1, 0 ),
+        };
+
+        public static Vector3[] CrossQuadNormals { get; } = new Vector3[8]
+        {
+            // QUAD 1
+            new( 0.7071068F, 0, -0.7071068F ),
+            new( 0.7071068F, 0, -0.7071068F ),
+            new( 0.7071068F, 0, -0.7071068F ),
+            new( 0.7071068F, 0, -0.7071068F ),
+
+            // QUAD 2
+            new( 0.7071068F, 0,  0.7071068F ),
+            new( 0.7071068F, 0,  0.7071068F ),
+            new( 0.7071068F, 0,  0.7071068F ),
+            new( 0.7071068F, 0,  0.7071068F ),
+        };
+    }
 }
