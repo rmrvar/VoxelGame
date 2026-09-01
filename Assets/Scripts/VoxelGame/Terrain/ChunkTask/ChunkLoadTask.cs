@@ -159,7 +159,8 @@ namespace VoxelGame.Terrain.ChunkTask
                 }
             }
 
-            // TREE PLACEMENT
+
+            // VEGETATION DISK
             for (int z = 0; z < ChunkConfig.PoissonDiskSizeZ; ++z)
             for (int x = 0; x < ChunkConfig.PoissonDiskSizeX; ++x)
             {
@@ -170,10 +171,46 @@ namespace VoxelGame.Terrain.ChunkTask
                 pooledIn.PoissonDisk[i] = GetTreeRangeHash(worldX, worldZ, input.Seed);
             }
 
-            int endX = ChunkConfig.PoissonDiskSizeX - poissonRadius;
-            int endZ = ChunkConfig.PoissonDiskSizeZ - poissonRadius;
-            for (int z = poissonRadius; z < endZ; ++z)
-            for (int x = poissonRadius; x < endX; ++x)
+            // GRASS PLACEMENT
+            int endX1 = ChunkConfig.PoissonDiskSizeX - 2 * poissonRadius;
+            int endZ1 = ChunkConfig.PoissonDiskSizeZ - 2 * poissonRadius;
+            for (int z = 2 * poissonRadius; z < endZ1; ++z)
+            for (int x = 2 * poissonRadius; x < endX1; ++x)
+            {
+                int i = x + z * ChunkConfig.PoissonDiskSizeX;
+
+                int heightX = x - poissonRadius;
+                int heightZ = z - poissonRadius;
+                int localX = heightX - poissonRadius;
+                int localZ = heightZ - poissonRadius;
+                int worldX = chunkPosition.x + localX;
+                int worldZ = chunkPosition.z + localZ;
+                
+                int heightIndex = heightX + heightZ * ChunkConfig.HeightmapSizeX;
+                float slider = input.PooledIn.Slidermap[heightIndex];
+                float chance = BiomeLogic.GetGrassChance(worldX, worldZ, slider);
+
+                if (chance * int.MaxValue < Mathf.Abs(pooledIn.PoissonDisk[i]))
+                {
+                    continue;
+                }
+
+                VoxelType grassType = BiomeLogic.GetGrassType(slider);
+
+                int localY = input.PooledIn.Heightmap[heightIndex] + 1 - chunkPosition.y;
+                if (localY < 0 || localY >= ChunkConfig.SizeY)
+                {
+                    continue; // Out of bounds.
+                }
+                int polytypeIndex = localX + localY * ChunkConfig.StrideY + localZ * ChunkConfig.StrideZ;
+                pooledIn.PolytypeChunkData.Data[polytypeIndex] = grassType;
+            }
+
+            // TREE PLACEMENT
+            int endX2 = ChunkConfig.PoissonDiskSizeX - poissonRadius;
+            int endZ2 = ChunkConfig.PoissonDiskSizeZ - poissonRadius;
+            for (int z = poissonRadius; z < endZ2; ++z)
+            for (int x = poissonRadius; x < endX2; ++x)
             {
                 int heightX = x - poissonRadius;
                 int heightZ = z - poissonRadius;

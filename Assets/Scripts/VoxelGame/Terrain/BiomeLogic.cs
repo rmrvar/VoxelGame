@@ -4,6 +4,11 @@ namespace VoxelGame.Terrain
 { 
 	public static class BiomeLogic
     {
+        public static VoxelType GetGrassType(float t)
+        {
+            return VoxelType.GRASS_SHORT;
+        }
+
         public static VoxelType GetVoxelType(int x, int y, int z, int h)
         {
             int dirtDepth = Mathf.FloorToInt(
@@ -63,8 +68,14 @@ namespace VoxelGame.Terrain
             // Remap combinedT.
             float newT = Mathf.Clamp01(Mathf.InverseLerp(0.1F, 0.4F, combinedT));
 
-            minTreeDistance = Mathf.FloorToInt(Mathf.Lerp(5, 10, newT));
+            minTreeDistance = Mathf.FloorToInt(Mathf.Lerp(3, 10, newT));
             return true;
+        }
+
+        public static float GetGrassChance(int x, int z, float t)
+        {
+            float absDelta = Mathf.Clamp01(Mathf.Abs(t - 0.4F) / 0.2F);
+            return Mathf.Lerp(0.05F, 0.0001F, absDelta);
         }
 
         public static int GetHeight(int x, int z, float t)

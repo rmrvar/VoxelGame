@@ -30,7 +30,7 @@ namespace VoxelGame.Terrain.Meshing
             Vector3[] vertices = CrossQuadVertices;
             Vector3[] uvs = CrossQuadUVs3;
 
-            Vector3 pos = new(x, y, z);
+            Vector3 pos = new(x - 1, y - 1, z - 1);
 
             for (int i = 0; i < 8; ++i)
             {

@@ -12,6 +12,8 @@ namespace VoxelGame.Terrain
         OAK_LOG,
         OAK_LEAVES,
 
+        GRASS_SHORT,
+
         GRASS_BOT,
         GRASS_TOP
     }
@@ -36,14 +38,15 @@ namespace VoxelGame.Terrain
         {
             return type switch
             {
-                VoxelType.AIR        => VoxelMaterialType.TRANSPARENT,
-                VoxelType.DIRT       => VoxelMaterialType.OPAQUE,
-                VoxelType.GRASS      => VoxelMaterialType.OPAQUE,
-                VoxelType.STONE      => VoxelMaterialType.OPAQUE,
-                VoxelType.OAK_LOG    => VoxelMaterialType.OPAQUE,
-                VoxelType.OAK_LEAVES => VoxelMaterialType.CUTOUT_TREE,
-                VoxelType.GRASS_BOT  => VoxelMaterialType.CUTOUT_GRASS,
-                VoxelType.GRASS_TOP  => VoxelMaterialType.CUTOUT_GRASS,
+                VoxelType.AIR         => VoxelMaterialType.TRANSPARENT,
+                VoxelType.DIRT        => VoxelMaterialType.OPAQUE,
+                VoxelType.GRASS       => VoxelMaterialType.OPAQUE,
+                VoxelType.STONE       => VoxelMaterialType.OPAQUE,
+                VoxelType.OAK_LOG     => VoxelMaterialType.OPAQUE,
+                VoxelType.OAK_LEAVES  => VoxelMaterialType.CUTOUT_TREE,
+                VoxelType.GRASS_SHORT => VoxelMaterialType.CUTOUT_GRASS,
+                VoxelType.GRASS_BOT   => VoxelMaterialType.CUTOUT_GRASS,
+                VoxelType.GRASS_TOP   => VoxelMaterialType.CUTOUT_GRASS,
 
                 _ => throw new NotImplementedException(
                     $"No {nameof(VoxelMaterialType)} is defined for {nameof(VoxelType)} '{type}'."
@@ -55,14 +58,15 @@ namespace VoxelGame.Terrain
         {
             return type switch
             {
-                VoxelType.AIR        => VoxelGeometryType.CUBE,
-                VoxelType.DIRT       => VoxelGeometryType.CUBE,
-                VoxelType.GRASS      => VoxelGeometryType.CUBE,
-                VoxelType.STONE      => VoxelGeometryType.CUBE,
-                VoxelType.OAK_LOG    => VoxelGeometryType.CUBE,
-                VoxelType.OAK_LEAVES => VoxelGeometryType.CUBE,
-                VoxelType.GRASS_BOT  => VoxelGeometryType.CROSS,
-                VoxelType.GRASS_TOP  => VoxelGeometryType.CROSS,
+                VoxelType.AIR         => VoxelGeometryType.CUBE,
+                VoxelType.DIRT        => VoxelGeometryType.CUBE,
+                VoxelType.GRASS       => VoxelGeometryType.CUBE,
+                VoxelType.STONE       => VoxelGeometryType.CUBE,
+                VoxelType.OAK_LOG     => VoxelGeometryType.CUBE,
+                VoxelType.OAK_LEAVES  => VoxelGeometryType.CUBE,
+                VoxelType.GRASS_SHORT => VoxelGeometryType.CROSS,
+                VoxelType.GRASS_BOT   => VoxelGeometryType.CROSS,
+                VoxelType.GRASS_TOP   => VoxelGeometryType.CROSS,
 
                 _ => throw new NotImplementedException(
                     $"No {nameof(VoxelGeometryType)} is defined for {nameof(VoxelType)} '{type}'."

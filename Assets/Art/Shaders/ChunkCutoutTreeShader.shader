@@ -1,4 +1,4 @@
-Shader "Terrain/ChunkCutoutShader"
+Shader "Terrain/ChunkCutoutTreeShader"
 {
     Properties
     {
