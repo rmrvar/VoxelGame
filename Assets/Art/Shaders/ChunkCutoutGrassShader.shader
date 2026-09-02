@@ -63,7 +63,7 @@ Shader "Terrain/ChunkCutoutGrassShader"
 			        i.uv.z
 			    );
 
-			    clip(tex.a - 1.0);
+			    clip(tex.a - 0.1);
 
 			    float3 normalWS = normalize(i.normalWS);
 

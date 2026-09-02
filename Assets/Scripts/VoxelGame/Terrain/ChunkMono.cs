@@ -3,34 +3,58 @@ using VoxelGame.Pooling;
 
 namespace VoxelGame.Terrain
 {
-    [RequireComponent(typeof(MeshFilter))]
-    [RequireComponent(typeof(MeshRenderer))]
-    [RequireComponent(typeof(MeshCollider))]
     public class ChunkMono : MonoBehaviour, IPoolable
     {
-        public Mesh Mesh { get; private set; }
+        [SerializeField]
+        private MeshFilter _triggerMeshFilter;
+        [SerializeField]
+        private MeshRenderer _triggerMeshRenderer;
+        [SerializeField]
+        private MeshCollider _triggerMeshCollider;
+
+        [SerializeField]
+        private MeshFilter _colliderMeshFilter;
+        [SerializeField]
+        private MeshRenderer _colliderMeshRenderer;
+        [SerializeField]
+        private MeshCollider _colliderMeshCollider;
+
+
+        public Mesh TriggerMesh { get; private set; }
+        public Mesh ColliderMesh { get; private set; }
 
         public bool CanCollide
         {
-            get => _meshCollider.enabled;
-            set => _meshCollider.enabled = value;
+            get => _colliderMeshCollider.enabled;
+            set
+            {
+                _triggerMeshCollider.enabled = value;
+                _colliderMeshCollider.enabled = value;
+            }
         }
 
         public bool IsVisible
         {
-            get => _meshRenderer.enabled;
-            set => _meshRenderer.enabled = value;
+            get => _colliderMeshRenderer.enabled;
+            set 
+            {
+                _triggerMeshRenderer.enabled = value;
+                _colliderMeshRenderer.enabled = value;
+            }
         }
 
         public void Refresh()
         {
-            _meshCollider.sharedMesh = Mesh;
+            _triggerMeshCollider.sharedMesh = TriggerMesh;
+            _colliderMeshCollider.sharedMesh = ColliderMesh;
         }
 
         public void OnBorrowed()
         {
-            _meshRenderer.enabled = false;
-            _meshCollider.enabled = false;
+            _triggerMeshRenderer.enabled = false;
+            _triggerMeshCollider.enabled = false;
+            _colliderMeshRenderer.enabled = false;
+            _colliderMeshCollider.enabled = false;
 
             gameObject.SetActive(true);
         }
@@ -42,17 +66,19 @@ namespace VoxelGame.Terrain
 
         private void Awake()
         {
-            _meshFilter = GetComponent<MeshFilter>();
-            _meshRenderer = GetComponent<MeshRenderer>();
-            _meshCollider = GetComponent<MeshCollider>();
+            Debug.Assert(_triggerMeshFilter != null);
+            Debug.Assert(_triggerMeshRenderer != null);
+            Debug.Assert(_triggerMeshCollider != null);
+            Debug.Assert(_colliderMeshFilter != null);
+            Debug.Assert(_colliderMeshRenderer != null);
+            Debug.Assert(_colliderMeshCollider != null);
 
-            Mesh = new Mesh();
-            _meshFilter.sharedMesh = Mesh;
-            _meshCollider.sharedMesh = Mesh;
+            TriggerMesh = new Mesh();
+            _triggerMeshFilter.sharedMesh = TriggerMesh;
+            _triggerMeshCollider.sharedMesh = TriggerMesh;
+            ColliderMesh = new Mesh();
+            _colliderMeshFilter.sharedMesh = ColliderMesh;
+            _colliderMeshCollider.sharedMesh = ColliderMesh;
         }
-
-        private MeshFilter _meshFilter;
-        private MeshRenderer _meshRenderer;
-        private MeshCollider _meshCollider;
     }
 }

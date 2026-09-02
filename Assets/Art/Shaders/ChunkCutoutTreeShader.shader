@@ -67,7 +67,7 @@ Shader "Terrain/ChunkCutoutTreeShader"
                 );
 
                 // Alpha < 1 -> discard fragment.
-                clip(tex.a - 1.0);
+                clip(tex.a - 0.1);
 
                 return half4(tex.rgb * i.lighting, 1);
             }

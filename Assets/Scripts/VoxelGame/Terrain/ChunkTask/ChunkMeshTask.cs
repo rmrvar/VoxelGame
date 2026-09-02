@@ -45,12 +45,16 @@ namespace VoxelGame.Terrain.ChunkTask
 
         protected override ChunkMeshTaskOut Execute(ChunkMeshTaskIn input, CancellationToken cancellationToken)
         {
-            GreedyMesher.Generate(input.PooledIn.Voxels, input.PooledIn.MesherWorkspace);
-            GrassMesher.Generate(input.PooledIn.Voxels, input.PooledIn.MesherWorkspace);
+            GreedyMesherWorkspace ws1 = input.PooledIn.GreedyMesherWorkspace;
+            GrassMesherWorkspace ws2 = input.PooledIn.GrassMesherWorkspace;
+
+            GreedyMesher.Generate(input.PooledIn.Voxels, ws1);
+            GrassMesher.Generate(input.PooledIn.Voxels, ws2);
 
             ChunkMeshTaskOut output = new()
             {
-                MesherWorkspace = input.PooledIn.MesherWorkspace
+                GreedyMesherWorkspace = ws1,
+                GrassMesherWorkspace = ws2
             };
             return output;
         }
@@ -73,7 +77,11 @@ namespace VoxelGame.Terrain.ChunkTask
                 Chunk.InitMono();
             }
 
-            output.MesherWorkspace.GetMesh(Chunk.Mono.Mesh);
+            GreedyMesherWorkspace ws1 = output.GreedyMesherWorkspace;
+            GrassMesherWorkspace ws2 = output.GrassMesherWorkspace;
+
+            ws1.FillMesh(Chunk.Mono.ColliderMesh);
+            ws2.FillMesh(Chunk.Mono.TriggerMesh);
             Chunk.Mono.Refresh();
             Chunk.Mono.IsVisible = true;
             Chunk.MeshVersion = MeshVersion;
@@ -371,6 +379,7 @@ namespace VoxelGame.Terrain.ChunkTask
 
     public class ChunkMeshTaskOut
     {
-        public MesherWorkspace MesherWorkspace;
+        public GreedyMesherWorkspace GreedyMesherWorkspace;
+        public GrassMesherWorkspace GrassMesherWorkspace;
     }
 }

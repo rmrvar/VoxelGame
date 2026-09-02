@@ -7,7 +7,7 @@ namespace VoxelGame.Terrain.Meshing
 {
 	public static class GreedyMesher
     {
-        public static void Generate(VoxelType[] voxels, MesherWorkspace workspace)
+        public static void Generate(VoxelType[] voxels, GreedyMesherWorkspace workspace)
         {
 			for (int sliceNormalSign = 0; sliceNormalSign < 2; ++sliceNormalSign)
             for (int sliceNormalAxis = 0; sliceNormalAxis < 3; ++sliceNormalAxis)
@@ -21,7 +21,7 @@ namespace VoxelGame.Terrain.Meshing
             int normalAxis, 
             int normalSign,
             VoxelType[] voxels, 
-            MesherWorkspace workspace
+            GreedyMesherWorkspace workspace
           )
         {
             int faceIndex = GetFaceIndex(normalAxis, normalSign);
@@ -70,15 +70,15 @@ namespace VoxelGame.Terrain.Meshing
                 for (int x = 1; x < slicePSize.x - 1; ++x)
                 {
                     int i1 = x * xStride + y * yStride + d * dStride;
+                    VoxelType thisType = voxels[i1];
 
                     int xm1 = x - 1;
                     int ym1 = y - 1;
 
                     int i2 = xm1 + ym1 * sliceSize.x;
                     VoxelType backType = voxels[i1 + dStride * (normalSign == 0 ? +1 : -1)];
-                    VoxelType thisType = voxels[i1];
-                    //if (thisType.IsCube() && (backType.IsTransparent() || backType.IsCutoutGrass() || (backType.IsCutoutTree() && !thisType.IsCutoutTree())))
-                    if (thisType.IsCube() && (backType.IsTransparent() || backType.IsCutoutTree() || backType.IsCutoutGrass()))
+
+                    if (thisType.IsCube() && backType.IsSeeThrough())
                     {
 						// The back voxel is see-through so this quad can potentially be drawn.
 					    types[i2] = voxels[i1];
@@ -173,7 +173,7 @@ namespace VoxelGame.Terrain.Meshing
             int normalSign,
             int depth,
             Quad quad, 
-            MesherWorkspace workspace
+            GreedyMesherWorkspace workspace
           )
         {
             int w = quad.MaxX - quad.MinX;
@@ -187,8 +187,8 @@ namespace VoxelGame.Terrain.Meshing
             workspace.Normals.AddRange(Normals[faceIndex]);
 
             List<int> quads = quad.Type.IsOpaque()
-                ? workspace.Quads1
-                : workspace.Quads2;
+                ? workspace.OpaqueQuads
+                : workspace.CutoutQuads;
 
             for (int i = 0; i < 4; ++i)
             {
@@ -217,7 +217,7 @@ namespace VoxelGame.Terrain.Meshing
                     uv.y *= h;
                 }
                 uv.z += uvOffset;
-                workspace.UVs.Add(uv);
+                workspace.UV3s.Add(uv);
             }
         }
 

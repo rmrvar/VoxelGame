@@ -3,20 +3,19 @@ using UnityEngine;
 
 namespace VoxelGame.Terrain.Meshing
 {
-    public sealed class MesherWorkspace
+    public sealed class GreedyMesherWorkspace
     {
         public readonly VoxelType[] Types;
         public readonly Quad[] GreedyQuads;
         public readonly int[] TopQuadIndices;
 
         public readonly List<Vector3> Vertices;
-        public readonly List<Vector3> UVs;
+        public readonly List<Vector3> UV3s;
         public readonly List<Vector3> Normals;
-        public readonly List<int> Quads1; // Opaque
-        public readonly List<int> Quads2; // Cutout Tree
-        public readonly List<int> Quads3; // Cutout Grass
+        public readonly List<int> OpaqueQuads;
+        public readonly List<int> CutoutQuads;
 
-        public MesherWorkspace()
+        public GreedyMesherWorkspace()
         {
             Vector3Int chunkSize = ChunkConfig.Size;
 
@@ -30,44 +29,32 @@ namespace VoxelGame.Terrain.Meshing
             int N = 5;
             int initialListSize = (chunkSize.x * chunkSize.z * 10) * N;
             Vertices = new List<Vector3>(initialListSize);
-            UVs = new List<Vector3>(initialListSize);
+            UV3s = new List<Vector3>(initialListSize);
             Normals = new List<Vector3>(initialListSize);
-            Quads1 = new List<int>(initialListSize);
-            Quads2 = new List<int>(initialListSize);
-            Quads3 = new List<int>(initialListSize);
+            OpaqueQuads = new List<int>(initialListSize);
+            CutoutQuads = new List<int>(initialListSize);
         }
 
         public void Clear()
         {
             // Arrays are overwritten completely by meshing.
             Vertices.Clear();
-            UVs.Clear();
+            UV3s.Clear();
             Normals.Clear();
-            Quads1.Clear();
-            Quads2.Clear();
-            Quads3.Clear();
+            OpaqueQuads.Clear();
+            CutoutQuads.Clear();
         }
 
-        public Mesh GetMesh(Mesh mesh = null)
+        public void FillMesh(Mesh mesh)
         {
-            if (mesh == null)
-            {
-                mesh = new Mesh();
-            }
-            else
-            {
-                mesh.Clear();
-            }
-
-            mesh.subMeshCount = 3;
+            mesh.Clear();
+            mesh.subMeshCount = 2;
             mesh.SetVertices(Vertices);
             mesh.SetNormals(Normals);
-            mesh.SetUVs(0, UVs);
-            mesh.SetIndices(Quads1, MeshTopology.Quads, 0);
-            mesh.SetIndices(Quads2, MeshTopology.Quads, 1);
-            mesh.SetIndices(Quads3, MeshTopology.Quads, 2);
+            mesh.SetUVs(0, UV3s);
+            mesh.SetIndices(OpaqueQuads, MeshTopology.Quads, 0);
+            mesh.SetIndices(CutoutQuads, MeshTopology.Quads, 1);
             mesh.RecalculateBounds();
-            return mesh;
         }
     }
 }

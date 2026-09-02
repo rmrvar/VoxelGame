@@ -21,8 +21,7 @@ namespace VoxelGame.Terrain
     public enum VoxelMaterialType : byte
     {
         OPAQUE,
-        CUTOUT_TREE,
-        CUTOUT_GRASS,
+        CUTOUT,
         TRANSPARENT
     }
 
@@ -43,10 +42,10 @@ namespace VoxelGame.Terrain
                 VoxelType.GRASS       => VoxelMaterialType.OPAQUE,
                 VoxelType.STONE       => VoxelMaterialType.OPAQUE,
                 VoxelType.OAK_LOG     => VoxelMaterialType.OPAQUE,
-                VoxelType.OAK_LEAVES  => VoxelMaterialType.CUTOUT_TREE,
-                VoxelType.GRASS_SHORT => VoxelMaterialType.CUTOUT_GRASS,
-                VoxelType.GRASS_BOT   => VoxelMaterialType.CUTOUT_GRASS,
-                VoxelType.GRASS_TOP   => VoxelMaterialType.CUTOUT_GRASS,
+                VoxelType.OAK_LEAVES  => VoxelMaterialType.CUTOUT,
+                VoxelType.GRASS_SHORT => VoxelMaterialType.CUTOUT,
+                VoxelType.GRASS_BOT   => VoxelMaterialType.CUTOUT,
+                VoxelType.GRASS_TOP   => VoxelMaterialType.CUTOUT,
 
                 _ => throw new NotImplementedException(
                     $"No {nameof(VoxelMaterialType)} is defined for {nameof(VoxelType)} '{type}'."
@@ -77,14 +76,17 @@ namespace VoxelGame.Terrain
         public static bool IsOpaque(this VoxelType type)
             => type.GetMaterialType() == VoxelMaterialType.OPAQUE;
 
-        public static bool IsCutoutTree(this VoxelType type)
-            => type.GetMaterialType() == VoxelMaterialType.CUTOUT_TREE;
-
-        public static bool IsCutoutGrass(this VoxelType type)
-            => type.GetMaterialType() == VoxelMaterialType.CUTOUT_GRASS;
+        public static bool IsCutout(this VoxelType type)
+            => type.GetMaterialType() == VoxelMaterialType.CUTOUT;
 
         public static bool IsTransparent(this VoxelType type)
             => type.GetMaterialType() == VoxelMaterialType.TRANSPARENT;
+
+        public static bool IsSeeThrough(this VoxelType type)
+        {
+            VoxelMaterialType materialType = type.GetMaterialType();
+            return materialType is VoxelMaterialType.TRANSPARENT or VoxelMaterialType.CUTOUT;
+        }
 
         public static bool IsCube(this VoxelType type)
             => type.GetGeometryType() == VoxelGeometryType.CUBE;

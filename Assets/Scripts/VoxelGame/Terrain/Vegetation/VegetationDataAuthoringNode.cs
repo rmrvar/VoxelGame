@@ -11,6 +11,11 @@ namespace VoxelGame.Terrain.Vegetation
         [field: SerializeField]
         public VoxelType Type { get; private set; }
 
+        [SerializeField]
+        private MeshFilter _triggerMeshFilter;
+        [SerializeField]
+        private MeshFilter _colliderMeshFilter;
+
         public Vector3Int LocalPosition => new(
             Mathf.FloorToInt(transform.localPosition.x),
             Mathf.FloorToInt(transform.localPosition.y),
@@ -78,13 +83,31 @@ namespace VoxelGame.Terrain.Vegetation
                     VoxelType.AIR,
                     VoxelType.AIR,
                 };
-                var workspace = new MesherWorkspace();
-                GreedyMesher.Generate(types, workspace);
 
-                MeshFilter meshFilter = GetComponentInChildren<MeshFilter>();
-                meshFilter.sharedMesh = new Mesh();
+                MeshFilter filter = Type.IsCube() 
+                    ? _colliderMeshFilter 
+                    : _triggerMeshFilter;
+                if (filter.sharedMesh == null)
+                {
+                    filter.sharedMesh = new Mesh();
+                }
 
-                workspace.GetMesh(meshFilter.sharedMesh);
+                if (filter == _colliderMeshFilter)
+                {
+                    var ws = new GreedyMesherWorkspace();
+                    GreedyMesher.Generate(types, ws);
+                    ws.FillMesh(filter.sharedMesh);
+
+                    _triggerMeshFilter.sharedMesh = null;
+                }
+                else
+                {   
+                    var ws = new GrassMesherWorkspace();
+                    GrassMesher.Generate(types, ws);
+                    ws.FillMesh(filter.sharedMesh);
+
+                    _colliderMeshFilter.sharedMesh = null;
+                }
 
                 // Finish the hacky stuff.
                 ChunkConfig.Reset();

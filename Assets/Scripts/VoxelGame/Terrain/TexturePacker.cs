@@ -1,8 +1,8 @@
+#if UNITY_EDITOR
+
 using System.IO;
 using System.Linq;
-#if UNITY_EDITOR
 using UnityEditor;
-#endif
 using UnityEngine;
 
 namespace VoxelGame.Terrain
@@ -18,7 +18,6 @@ namespace VoxelGame.Terrain
         [SerializeField]
         private string _materialParamName;
 
-#if UNITY_EDITOR
         [ContextMenu("Pack Selected")]
         private void TryPackTextures()
         {
@@ -47,7 +46,7 @@ namespace VoxelGame.Terrain
 
         private void Pack()
         {
-            Texture2DArray textureArray = new(_w, _h, _textures.Length, TextureFormat.ARGB32, false);
+            Texture2DArray textureArray = new(_w, _h, _textures.Length, TextureFormat.ARGB32, true);
             textureArray.wrapMode = TextureWrapMode.Repeat;
             textureArray.filterMode = FilterMode.Point;
             for (int i = 0; i < _textures.Length; ++i)
@@ -67,6 +66,9 @@ namespace VoxelGame.Terrain
                     dstY: 0
                   );
             }
+
+            textureArray.Apply(updateMipmaps: true, makeNoLongerReadable: true);
+
             string folderPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(this));
             string path = $"{folderPath}/{name}_Output.asset";
             AssetDatabase.CreateAsset(textureArray, path);
@@ -83,6 +85,7 @@ namespace VoxelGame.Terrain
 
         private int _w;
         private int _h;
-#endif
     }
 }
+
+#endif
