@@ -69,9 +69,11 @@ namespace VoxelGame.Terrain
             return _cts.Token;
         }
 
-        public bool IsUnmaterializedSolid => !IsMaterialized && _monoData.Data != VoxelType.AIR;
+        public bool IsUnmaterializedSolid
+            => !IsMaterialized && !_monoData.Data.Is(VoxelType.AIR);
 
-        public bool IsUnmaterializedEmpty => !IsMaterialized && _monoData.Data == VoxelType.AIR;
+        public bool IsUnmaterializedEmpty
+            => !IsMaterialized && _monoData.Data.Is(VoxelType.AIR);
 
         public bool IsMaterialized { get; private set; }
 

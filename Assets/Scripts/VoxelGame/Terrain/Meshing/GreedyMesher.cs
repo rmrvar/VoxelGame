@@ -101,7 +101,7 @@ namespace VoxelGame.Terrain.Meshing
 
                     VoxelType type = types[i];
 
-                    if (type == VoxelType.AIR)
+                    if (type.Is(VoxelType.AIR))
                     {
                         // Air voxels do not have quads.
                         topQuadIndices[x] = -1;
@@ -110,7 +110,7 @@ namespace VoxelGame.Terrain.Meshing
 
                     ref Quad quad = ref quads[numQuads];
                     
-                    if (lftType != type)
+                    if (!lftType.Is(type))
                     {
 						// New quad type.
                         quad.Type = type;
@@ -126,7 +126,7 @@ namespace VoxelGame.Terrain.Meshing
                         ++quad.MaxX;
                     }
 
-                    if (x < sliceSize.x - 1 && types[i + 1] == type)
+                    if (x < sliceSize.x - 1 && types[i + 1].Is(type))
                     {
 						// Quad keeps going.
                         topQuadIndices[x] = -1;
@@ -144,7 +144,7 @@ namespace VoxelGame.Terrain.Meshing
                     {
 						// Has a top quad.
                         ref Quad topQuad = ref quads[topQuadIndex];
-                        if (topQuad.MinX == quad.MinX && topQuad.Type == quad.Type)
+                        if (topQuad.MinX == quad.MinX && topQuad.Type.Is(quad.Type))
                         {
 							// This quad gets taken over.
                             ++topQuad.MaxY;
@@ -179,7 +179,7 @@ namespace VoxelGame.Terrain.Meshing
             int w = quad.MaxX - quad.MinX;
             int h = quad.MaxY - quad.MinY;
 
-            int uvOffset = ((int)quad.Type - 1) * 3 + TextureFaceOffsets[faceIndex];
+            int uvOffset = ((int)quad.Type.Clean() - 1) * 3 + TextureFaceOffsets[faceIndex];
 
             Vector3[] vertices = Vertices[faceIndex];
             Vector3[] uvs = UVs3[faceIndex];

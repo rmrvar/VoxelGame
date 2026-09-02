@@ -28,7 +28,7 @@ namespace VoxelGame.Terrain.Meshing
 
         private static void CreateCross(int x, int y, int z, VoxelType type, GrassMesherWorkspace workspace)
         {
-            int uvOffset = ((int)type - 1) * 3;
+            int uvOffset = ((int)type.Clean() - 1) * 3;
 
             Vector3[] vertices = CrossQuadVertices;
             Vector3[] uvs = CrossQuadUVs3;

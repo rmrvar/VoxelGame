@@ -32,7 +32,7 @@ namespace VoxelGame.Terrain.ChunkTask
             Debug.Assert(!_isRemesh);
 
             bool isMaterializedEmpty =
-                Chunk.IsMaterializedMonotype(out VoxelType voxelData) && voxelData == VoxelType.AIR;
+                Chunk.IsMaterializedMonotype(out VoxelType voxelData) && voxelData.Is(VoxelType.AIR);
             return isMaterializedEmpty;
         }
 

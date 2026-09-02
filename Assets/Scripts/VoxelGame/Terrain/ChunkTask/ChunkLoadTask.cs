@@ -105,9 +105,9 @@ namespace VoxelGame.Terrain.ChunkTask
                 int worldX = chunkPosition.x + x - poissonRadius;
                 int worldZ = chunkPosition.z + z - poissonRadius;
 
-                float slider = BiomeLogic.GetSlider(worldX, worldZ);
+                float slider = BiomeLogic.GetSlider(worldX, worldZ, input.Seed);
 
-                int height = BiomeLogic.GetHeight(worldX, worldZ, slider);
+                int height = BiomeLogic.GetHeight(worldX, worldZ, slider, input.Seed);
                 pooledIn.Slidermap[heightIndex] = slider;
                 pooledIn.Heightmap[heightIndex] = height;
                 
@@ -142,7 +142,7 @@ namespace VoxelGame.Terrain.ChunkTask
                     int worldY = chunkPosition.y + y;
 
                     int typeIndex = x + y * ChunkConfig.StrideY + z * ChunkConfig.StrideZ;
-                    VoxelType type = BiomeLogic.GetVoxelType(worldX, worldY, worldZ, height);
+                    VoxelType type = BiomeLogic.GetVoxelType(worldX, worldY, worldZ, height, input.Seed);
                     pooledIn.PolytypeChunkData.Data[typeIndex] = type;
 
                     if (isMonotype)
@@ -171,41 +171,6 @@ namespace VoxelGame.Terrain.ChunkTask
                 pooledIn.PoissonDisk[i] = GetTreeRangeHash(worldX, worldZ, input.Seed);
             }
 
-            // GRASS PLACEMENT
-            int endX1 = ChunkConfig.PoissonDiskSizeX - 2 * poissonRadius;
-            int endZ1 = ChunkConfig.PoissonDiskSizeZ - 2 * poissonRadius;
-            for (int z = 2 * poissonRadius; z < endZ1; ++z)
-            for (int x = 2 * poissonRadius; x < endX1; ++x)
-            {
-                int i = x + z * ChunkConfig.PoissonDiskSizeX;
-
-                int heightX = x - poissonRadius;
-                int heightZ = z - poissonRadius;
-                int localX = heightX - poissonRadius;
-                int localZ = heightZ - poissonRadius;
-                int worldX = chunkPosition.x + localX;
-                int worldZ = chunkPosition.z + localZ;
-                
-                int heightIndex = heightX + heightZ * ChunkConfig.HeightmapSizeX;
-                float slider = input.PooledIn.Slidermap[heightIndex];
-                float chance = BiomeLogic.GetGrassChance(worldX, worldZ, slider);
-
-                if (chance * int.MaxValue < Mathf.Abs(pooledIn.PoissonDisk[i]))
-                {
-                    continue;
-                }
-
-                VoxelType grassType = BiomeLogic.GetGrassType(slider);
-
-                int localY = input.PooledIn.Heightmap[heightIndex] + 1 - chunkPosition.y;
-                if (localY < 0 || localY >= ChunkConfig.SizeY)
-                {
-                    continue; // Out of bounds.
-                }
-                int polytypeIndex = localX + localY * ChunkConfig.StrideY + localZ * ChunkConfig.StrideZ;
-                pooledIn.PolytypeChunkData.Data[polytypeIndex] = grassType;
-            }
-
             // TREE PLACEMENT
             int endX2 = ChunkConfig.PoissonDiskSizeX - poissonRadius;
             int endZ2 = ChunkConfig.PoissonDiskSizeZ - poissonRadius;
@@ -221,7 +186,7 @@ namespace VoxelGame.Terrain.ChunkTask
 
                 int heightIndex = heightX + heightZ * ChunkConfig.HeightmapSizeX;
                 float slider = input.PooledIn.Slidermap[heightIndex];
-                if (!BiomeLogic.TryGetMinTreeDistance(worldX, worldZ, slider, out int radius))
+                if (!BiomeLogic.TryGetMinTreeDistance(worldX, worldZ, slider, input.Seed, out int radius))
                 {
                     continue;
                 }
@@ -265,7 +230,7 @@ namespace VoxelGame.Terrain.ChunkTask
 
                     // Place a tree.
                     int polytypeIndex = newLocalX + newLocalY * ChunkConfig.StrideY + newLocalZ * ChunkConfig.StrideZ;
-                    if (pooledIn.PolytypeChunkData.Data[polytypeIndex] == VoxelType.AIR)
+                    if (pooledIn.PolytypeChunkData.Data[polytypeIndex].Is(VoxelType.AIR))
                     {
                         pooledIn.PolytypeChunkData.Data[polytypeIndex] = vegetationData.GetType(i);
                         isMonotype = false;
@@ -273,6 +238,45 @@ namespace VoxelGame.Terrain.ChunkTask
                 });
 
                 end:;
+            }
+            
+            // GRASS PLACEMENT
+            int endX1 = ChunkConfig.PoissonDiskSizeX - 2 * poissonRadius;
+            int endZ1 = ChunkConfig.PoissonDiskSizeZ - 2 * poissonRadius;
+            for (int z = 2 * poissonRadius; z < endZ1; ++z)
+            for (int x = 2 * poissonRadius; x < endX1; ++x)
+            {
+                int i = x + z * ChunkConfig.PoissonDiskSizeX;
+
+                int heightX = x - poissonRadius;
+                int heightZ = z - poissonRadius;
+                int localX = heightX - poissonRadius;
+                int localZ = heightZ - poissonRadius;
+                int worldX = chunkPosition.x + localX;
+                int worldZ = chunkPosition.z + localZ;
+                
+                int heightIndex = heightX + heightZ * ChunkConfig.HeightmapSizeX;
+                float slider = input.PooledIn.Slidermap[heightIndex];
+                float chance = BiomeLogic.GetGrassChance(worldX, worldZ, slider, input.Seed);
+
+                if (chance * int.MaxValue < Mathf.Abs(pooledIn.PoissonDisk[i]))
+                {
+                    continue;
+                }
+
+                VoxelType grassType = BiomeLogic.GetGrassType(slider, input.Seed);
+
+                int localY = input.PooledIn.Heightmap[heightIndex] + 1 - chunkPosition.y;
+                if (localY < 0 || localY >= ChunkConfig.SizeY)
+                {
+                    continue; // Out of bounds.
+                }
+
+                int polytypeIndex = localX + localY * ChunkConfig.StrideY + localZ * ChunkConfig.StrideZ;
+                if (pooledIn.PolytypeChunkData.Data[polytypeIndex].Is(VoxelType.AIR))
+                {
+                    pooledIn.PolytypeChunkData.Data[polytypeIndex] = grassType;
+                }
             }
 
             ChunkLoadTaskOut output = new()

@@ -4,15 +4,15 @@ namespace VoxelGame.Terrain
 { 
 	public static class BiomeLogic
     {
-        public static VoxelType GetGrassType(float t)
+        public static VoxelType GetGrassType(float t, int seed)
         {
             return VoxelType.GRASS_SHORT;
         }
 
-        public static VoxelType GetVoxelType(int x, int y, int z, int h)
+        public static VoxelType GetVoxelType(int x, int y, int z, int h, int seed)
         {
             int dirtDepth = Mathf.FloorToInt(
-                EvaluatePerlin(x, z, 0.1F, 0.1F, 300000, 300000, 2, 4)
+                EvaluatePerlin(x, z, 0.1F, 0.1F, 300000, 300000, 2, 4, seed)
               );
             int depth = h - y;
             if (depth < 0)
@@ -34,16 +34,16 @@ namespace VoxelGame.Terrain
         }
 
         // Super important that this is smooth. Also, ideally [0, 1] is equally common.
-        public static float GetSlider(int x, int z)
+        public static float GetSlider(int x, int z, int seed)
         {
-            float p1 = EvaluatePerlin(x, z, 0.007F, 0.007F, 1_000, 1_000, 0, 1);
-            float p2 = EvaluatePerlin(x, z, 0.006F, 0.008F, 2_000, 2_000, 0, 1);
-            float p3 = EvaluatePerlin(x, z, 0.010F, 0.002F, 3_000, 3_000, 0, 1);
-            float p4 = EvaluatePerlin(x, z, 0.015F, 0.010F, 4_000, 4_000, 0, 1);
+            float p1 = EvaluatePerlin(x, z, 0.007F, 0.007F, 1_000, 1_000, 0, 1, seed);
+            float p2 = EvaluatePerlin(x, z, 0.006F, 0.008F, 2_000, 2_000, 0, 1, seed);
+            float p3 = EvaluatePerlin(x, z, 0.010F, 0.002F, 3_000, 3_000, 0, 1, seed);
+            float p4 = EvaluatePerlin(x, z, 0.015F, 0.010F, 4_000, 4_000, 0, 1, seed);
             return (Mathf.Min(p1, p3) + Mathf.Max(p2, p4)) * 0.5F;
         }
 
-        public static bool TryGetMinTreeDistance(int x, int z, float t, out int minTreeDistance)
+        public static bool TryGetMinTreeDistance(int x, int z, float t, int seed, out int minTreeDistance)
         {
             if (t > 0.8)
             {
@@ -52,8 +52,8 @@ namespace VoxelGame.Terrain
             }
 
             // Tree biome
-            float p1 = EvaluatePerlin(x, z, 0.005F, 0.003F, 5_000, 5_000, 0, 1);
-            float p2 = EvaluatePerlin(x, z, 0.002F, 0.007F, 6_000, 6_000, 0, 1);
+            float p1 = EvaluatePerlin(x, z, 0.005F, 0.003F, 5_000, 5_000, 0, 1, seed);
+            float p2 = EvaluatePerlin(x, z, 0.002F, 0.007F, 6_000, 6_000, 0, 1, seed);
             float p = (p1 + p2) * 0.5F;
 
             if (p < 0.5F)
@@ -72,13 +72,13 @@ namespace VoxelGame.Terrain
             return true;
         }
 
-        public static float GetGrassChance(int x, int z, float t)
+        public static float GetGrassChance(int x, int z, float t, int seed)
         {
             float absDelta = Mathf.Clamp01(Mathf.Abs(t - 0.4F) / 0.2F);
             return Mathf.Lerp(0.05F, 0.0001F, absDelta);
         }
 
-        public static int GetHeight(int x, int z, float t)
+        public static int GetHeight(int x, int z, float t, int seed)
         {
             Debug.Assert(t is >= 0 and <= 1);
 
@@ -90,37 +90,37 @@ namespace VoxelGame.Terrain
 
             if (t > _PLATEAU_T + _PLATEAU_R)
             {
-                height1 = GetPlateauHeight(x, z);
+                height1 = GetPlateauHeight(x, z, seed);
             } else 
             if (t > _PLATEAU_T - _PLATEAU_R)
             {
-                height1 = GetHiHillsHeight(x, z);
-                height2 = GetPlateauHeight(x, z);
+                height1 = GetHiHillsHeight(x, z, seed);
+                height2 = GetPlateauHeight(x, z, seed);
                 heightStrength = EvaluateLine(t, _PLATEAU_T, _PLATEAU_R);
             } else 
             if (t > _HI_HILLS_T + _HI_HILLS_R)
             {
-                height1 = GetHiHillsHeight(x, z);
+                height1 = GetHiHillsHeight(x, z, seed);
             } else
             if (t > _HI_HILLS_T - _HI_HILLS_R)
             {
-                height1 = GetFlatlandsHeight(x, z);
-                height2 = GetHiHillsHeight(x, z);
+                height1 = GetFlatlandsHeight(x, z, seed);
+                height2 = GetHiHillsHeight(x, z, seed);
                 heightStrength = EvaluateLine(t, _HI_HILLS_T, _HI_HILLS_R);
             } else
             if (t > _FLATLANDS_T + _FLATLANDS_R)
             {
-                height1 = GetFlatlandsHeight(x, z);
+                height1 = GetFlatlandsHeight(x, z, seed);
             } else
             if (t > _FLATLANDS_T - _FLATLANDS_R)
             {
-                height1 = GetLoHillsHeight(x, z);
-                height2 = GetFlatlandsHeight(x, z);
+                height1 = GetLoHillsHeight(x, z, seed);
+                height2 = GetFlatlandsHeight(x, z, seed);
                 heightStrength = EvaluateLine(t, _FLATLANDS_T, _FLATLANDS_R);
             }
             else
             {
-                height1 = GetLoHillsHeight(x, z);
+                height1 = GetLoHillsHeight(x, z, seed);
             }
 
             if (heightStrength < 0)
@@ -133,34 +133,34 @@ namespace VoxelGame.Terrain
             }
         }
 
-        private static float GetFlatlandsHeight(int x, int z)
+        private static float GetFlatlandsHeight(int x, int z, int seed)
         {
-            float p1 = EvaluatePerlin(x, z, 0.01F, 0.02F, 0, 0, 0, 4);
-            float p2 = EvaluatePerlin(x, z, 0.01F, 0.01F, 1000, 1000, 0, 4);
+            float p1 = EvaluatePerlin(x, z, 0.01F, 0.02F, 0, 0, 0, 4, seed);
+            float p2 = EvaluatePerlin(x, z, 0.01F, 0.01F, 1000, 1000, 0, 4, seed);
 
             return (p1 + p2) * 0.5F;
         }
 
-        private static float GetLoHillsHeight(int x, int z)
+        private static float GetLoHillsHeight(int x, int z, int seed)
         {
-            float p1 = EvaluatePerlin(x, z, 0.03F, 0.01F, 50000, 50000, 0, 15);
-            float p2 = EvaluatePerlin(x, z, 0.05F, 0.03F, 51000, 51000, 0, 15);
+            float p1 = EvaluatePerlin(x, z, 0.03F, 0.01F, 50000, 50000, 0, 15, seed);
+            float p2 = EvaluatePerlin(x, z, 0.05F, 0.03F, 51000, 51000, 0, 15, seed);
 
             return (p1 + p2) * 0.5F;
         }
 
-        private static float GetHiHillsHeight(int x, int z)
+        private static float GetHiHillsHeight(int x, int z, int seed)
         {
-            float p1 = EvaluatePerlin(x, z, 0.04F, 0.01F, 100000, 100000, 15, 40);
-            float p2 = EvaluatePerlin(x, z, 0.03F, 0.04F, 101000, 101000, 1, 15);
+            float p1 = EvaluatePerlin(x, z, 0.04F, 0.01F, 100000, 100000, 15, 40, seed);
+            float p2 = EvaluatePerlin(x, z, 0.03F, 0.04F, 101000, 101000, 1, 15, seed);
 
             return p1 + p2;
         }
 
-        private static float GetPlateauHeight(int x, int z)
+        private static float GetPlateauHeight(int x, int z, int seed)
         {
-            float p1 = EvaluatePerlin(x, z, 0.01F, 0.03F, 150000, 150000, 40, 60);
-            float p2 = EvaluatePerlin(x, z, 0.07F, 0.05F, 151000, 153000, 1, 10);
+            float p1 = EvaluatePerlin(x, z, 0.01F, 0.03F, 150000, 150000, 40, 60, seed);
+            float p2 = EvaluatePerlin(x, z, 0.07F, 0.05F, 151000, 153000, 1, 10, seed);
 
             return p1 + p2;
         }
@@ -173,12 +173,13 @@ namespace VoxelGame.Terrain
             float xOffset,
             float zOffset,
             float minY,
-            float maxY
+            float maxY,
+            int seed
           )
         {
             // Perlin noise is symmetric around the origin, so offset the sample space.
-            xOffset += _PERLIN_OFFSET;
-            zOffset += _PERLIN_OFFSET;
+            xOffset += _PERLIN_OFFSET + seed;
+            zOffset += _PERLIN_OFFSET + seed;
             return Mathf.Lerp(minY, maxY, Mathf.PerlinNoise(x * xF + xOffset, z * zF + zOffset));
         }
 
