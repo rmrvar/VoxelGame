@@ -1,8 +1,11 @@
-Shader "Terrain/ChunkCutoutGrassShader"
+Shader "Terrain/ChunkCutoutShader"
 {
     Properties
     {
         _TextureArray ("Texture Array", 2DArray) = "" {}
+	    
+    	[Enum(UnityEngine.Rendering.CullMode)]
+	    _ShouldCull ("Should Cull", Float) = 2
     }
 
     SubShader
@@ -15,8 +18,8 @@ Shader "Terrain/ChunkCutoutGrassShader"
 
         Pass
         {
-		    Cull Off
-
+			Cull [_ShouldCull]
+        	
             HLSLPROGRAM
 
             #pragma vertex vert
@@ -30,7 +33,7 @@ Shader "Terrain/ChunkCutoutGrassShader"
             {
                 float4 positionCS : SV_POSITION;
                 float3 uv : TEXCOORD0;
-                float3 normalWS : TEXCOORD1;
+                float lighting : TEXCOORD1;
             };
 
             TEXTURE2D_ARRAY(_TextureArray);
@@ -46,41 +49,40 @@ Shader "Terrain/ChunkCutoutGrassShader"
 
                 o.positionCS = TransformObjectToHClip(positionOS.xyz);
                 o.uv = uv;
-                o.normalWS = TransformObjectToWorldNormal(normalOS);
+
+                float3 normalWS = TransformObjectToWorldNormal(normalOS);
+
+                Light mainLight = GetMainLight();
+                float3 lightVectorWS = mainLight.direction;
+
+                o.lighting = dot(normalWS, lightVectorWS);
 
                 return o;
             }
 
-			half4 frag(
+            half4 frag(
 			    v2f i,
 			    bool isFrontFace : SV_IsFrontFace
-			) : SV_Target
-			{
-			    half4 tex = SAMPLE_TEXTURE2D_ARRAY(
-			        _TextureArray,
-			        sampler_TextureArray,
-			        i.uv.xy,
-			        i.uv.z
-			    );
+			  ) : SV_Target
+            {
+                half4 tex = SAMPLE_TEXTURE2D_ARRAY(
+                    _TextureArray,
+                    sampler_TextureArray,
+                    i.uv.xy,
+                    i.uv.z
+                  );
 
-			    clip(tex.a - 0.1);
+                clip(tex.a - 0.1);
 
-			    float3 normalWS = normalize(i.normalWS);
-
+                float actualLighting = i.lighting;
 			    if (!isFrontFace)
 			    {
-			        normalWS = -normalWS;
+			        actualLighting = -actualLighting;
 			    }
+                actualLighting = lerp(0.3, 1, saturate(actualLighting));
 
-			    Light mainLight = GetMainLight();
-			    float3 lightVectorWS = mainLight.direction;
-
-			    float lighting = saturate(dot(normalWS, lightVectorWS));
-
-			    lighting = lerp(0.3, 1, lighting);
-
-			    return half4(tex.rgb * lighting, 1);
-			}
+                return half4(tex.rgb * actualLighting, 1);
+            }
 
             ENDHLSL
         }
