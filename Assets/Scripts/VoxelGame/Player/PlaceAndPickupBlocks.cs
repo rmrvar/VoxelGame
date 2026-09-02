@@ -3,155 +3,122 @@ using System.Collections.Generic;
 using UnityEngine;
 using VoxelGame.Terrain;
 
-namespace VoxelGame
+namespace VoxelGame.Player
 {
 	public class PlaceAndPickupBlocks : MonoBehaviour
 	{
-		[SerializeField] private Transform _lookRoot;
-
-		private void Awake()
-		{
-			Cursor.lockState = CursorLockMode.Locked;
-		}
+		[SerializeField] 
+        private Transform _lookRoot;
 
 		private void Update()
 		{
-			if (Input.GetKeyDown(KeyCode.Escape))
+            if (Input.GetKeyDown(KeyCode.Mouse0))
 			{
-				Cursor.lockState = CursorLockMode.None;
-			}
-
-			if (Input.GetKeyDown(KeyCode.Mouse0))
-			{
-				Cursor.lockState = CursorLockMode.Locked;
-				InteractWithBlock(placeOrPickup: false);
+				InteractWithVoxel(placeOrPickup: false);
 			} else
 			if (Input.GetKeyDown(KeyCode.Mouse1))
 			{
-				Cursor.lockState = CursorLockMode.Locked;
-				InteractWithBlock(placeOrPickup: true);
+				InteractWithVoxel(placeOrPickup: true);
 			}
 		}
 
-		private void InteractWithBlock(bool placeOrPickup)
-		{
-			var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-			var layerMask = 1 << LayerMask.NameToLayer("Chunk");
+        private void InteractWithVoxel(bool placeOrPickup)
+        {
+            var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            var layerMask = 
+                (1 << LayerMask.NameToLayer("Chunk")) |
+                (1 << LayerMask.NameToLayer("ChunkTrigger"));
 
-			Debug.DrawLine(_lookRoot.position, _lookRoot.position + ray.direction.normalized * 7f, Color.blue, 1f);
+            Debug.DrawLine(_lookRoot.position, _lookRoot.position + ray.direction.normalized * 7f, Color.blue, 1f);
 
-			if (Physics.Raycast(ray, out var hitInfo, 7, layerMask))
-			{
-				Debug.Log("HIT CHUNK!");
-
-				var posToAffect = Vector3Int.FloorToInt(hitInfo.point + (placeOrPickup ? +1 : -1) * hitInfo.normal.normalized / 2f);
-				var chunkToAffect = ChunkManager.Instance.GetChunkByPos(posToAffect);
-                var indexToAffect = chunkToAffect.GetVoxelIndexFromWorldPosition(posToAffect);
-
-				Debug.Log($"Hit voxel {posToAffect} in {chunkToAffect.Id}");
-
-                if (!chunkToAffect.IsMaterializedPolytype)
+            bool old = Physics.queriesHitBackfaces;
+            try
+            {
+                Physics.queriesHitBackfaces = true;
+                if (Physics.Raycast(ray, out var hitInfo, 7, layerMask))
                 {
-					// We need voxels to work with.
-					ChunkManager.Instance.ScheduleImmediateReloadTask(chunkToAffect);
-                }
+                    Debug.Log("HIT CHUNK!");
 
-				DrawCube(posToAffect);
+                    Vector3 point = hitInfo.point;
 
-				// We are now working with a polytype chunk.
-
-				if (placeOrPickup)
-				{
-                    // TODO: Add support for different voxel types.
-                    chunkToAffect.PolyData.Data[indexToAffect] = VoxelType.DIRT;
-				}
-                else
-                {
-                    chunkToAffect.PolyData.Data[indexToAffect] = VoxelType.AIR;
-                }
-
-                ++chunkToAffect.VoxelVersion;
-
-                ChunkManager.Instance.SaveSystem.MarkDirty(chunkToAffect.Id);
-
-                ChunkManager.Instance.ScheduleImmediateRemeshTask(chunkToAffect);
-
-                foreach (Vector3Int neighborPosition in GetNeighboringPositions(posToAffect))
-                {
-                    Vector3Int neighborChunkId = ChunkManager.Instance.GetChunkId(neighborPosition);
-
-                    Chunk neighborChunk = ChunkManager.Instance.GetChunkById(neighborChunkId);
-                    if (neighborChunk == chunkToAffect)
+                    if (hitInfo.collider.gameObject.layer == LayerMask.NameToLayer("Chunk"))
                     {
-                        continue; // We have already meshed this chunk.
+                        point += ((placeOrPickup ? +1 : -1) / 2.0F) * hitInfo.normal.normalized;
+                    }
+                    else
+                    {
+                        if (placeOrPickup)
+                        {
+                            return; // We don't want to place blocks on chunk triggers.
+                        }
                     }
 
-                    ChunkManager.Instance.SaveSystem.MarkDirty(neighborChunkId);
+                    var posToAffect = Vector3Int.FloorToInt(point);
+                    var chunkToAffect = ChunkManager.Instance.GetChunkByPos(posToAffect);
+                    var indexToAffect = chunkToAffect.GetVoxelIndexFromWorldPosition(posToAffect);
 
-                    if (neighborChunk == null)
-                    {
-                        // Only happens with really fast player and unloading, but shouldn't be
-                        // an issue with dirtiness.
-                        continue;
-                    }
+                    Debug.Log($"Affected voxel {posToAffect} in {chunkToAffect.Id}");
+                    DrawCube(posToAffect);
 
-                    if (!neighborChunk.IsMaterializedPolytype)
-                    {
-                        // We could technically render a dirty materialized monotype chunk, but
-                        // the save system wants all dirty chunks to be polytypes.
-                        ChunkManager.Instance.ScheduleImmediateReloadTask(neighborChunk);
-                    }
-                    ChunkManager.Instance.ScheduleImmediateRemeshTask(neighborChunk);
+                    ConvertToPolytypeChunk(chunkToAffect);
+
+                    UpdateVoxel(chunkToAffect, indexToAffect, placeOrPickup ? VoxelType.DIRT : VoxelType.AIR);
+
+                    UpdateMeshes(chunkToAffect, posToAffect);
+                }
+            }
+            finally
+            {
+                Physics.queriesHitBackfaces = old;
+            }
+        }
+
+        private void ConvertToPolytypeChunk(Chunk chunk)
+        {
+            if (!chunk.IsMaterializedPolytype)
+            {
+                ChunkManager.Instance.ScheduleImmediateReloadTask(chunk);
+            }
+        }
+
+        private void UpdateVoxel(Chunk chunk, int i, VoxelType type)
+        {
+            chunk.PolyData.Data[i] = type;
+            ++chunk.VoxelVersion;
+            ChunkManager.Instance.SaveSystem.MarkDirty(chunk.Id);
+        }
+        
+        private void UpdateMeshes(Chunk chunk, Vector3Int position)
+        {
+            ChunkManager.Instance.ScheduleImmediateRemeshTask(chunk);
+            foreach (Vector3Int neighborPosition in GetNeighboringPositions(position))
+            {
+                Vector3Int neighborChunkId = ChunkManager.Instance.GetChunkId(neighborPosition);
+
+                Chunk neighborChunk = ChunkManager.Instance.GetChunkById(neighborChunkId);
+                if (neighborChunk == chunk)
+                {
+                    continue; // We have already meshed this chunk.
                 }
 
-				//if (placeOrPickup)
-				//{ 
-				//	PushOutAllItemDropsInBlock(chunkToAffect, posToAffect);
-				//}
-			}
-		}
+                ChunkManager.Instance.SaveSystem.MarkDirty(neighborChunkId);
 
-        //private void PushOutAllItemDropsInBlock(Chunk chunk, Vector3Int localPositionToPlace)
-        //{
-        //	var neighboringPositions = chunk.GetNeighboringPositions(localPositionToPlace);
-        //
-        //	var chunkPos = chunk.gameObject.transform.position;
-        //	var globalBlockOrigin = chunkPos + localPositionToPlace + new Vector3(0.5F, 0.5F, 0.5F);
-        //
-        //	var colliders = Physics.OverlapBox(globalBlockOrigin, Vector3.one * 0.5F, Quaternion.identity, LayerMask.GetMask("Item Drop"));
-        //	foreach (var collider in colliders)
-        //	{
-        //		var itemPos = collider.attachedRigidbody.position;
-        //
-        //		var smallestDir = Vector3.zero;
-        //		var smallestDeltaMag = float.MaxValue;
-        //		foreach (var neighboringPos in neighboringPositions)
-        //		{
-        //			Vector3 neighborDir = neighboringPos - localPositionToPlace;
-        //			var neighbor = chunk.GetVoxel(neighboringPos);
-        //
-        //			if (neighbor != null)
-        //			{ 
-        //				continue;  // The neighboring block is occupied. We want to find an unoccupied one to push this item to. Skip.
-        //			}
-        //
-        //			// Calculates the distance of the item to the neighboring edge.
-        //			// Here we rely on the alternate definition of the dot product
-        //			// a dot b = a.x * b.x + a.y * b.y + a.z * b.z
-        //			// to eliminate any the two axes not in the direction of the neighbor.
-        //			var delta = (globalBlockOrigin + neighborDir * 0.5F) - itemPos;
-        //			var deltaMag = Vector3.Dot(delta, neighborDir);
-        //			if (smallestDeltaMag > deltaMag)
-        //			{
-        //				smallestDir = neighborDir;
-        //				smallestDeltaMag = deltaMag;
-        //			}
-        //		}
-        //
-        //		// Add a small constant to the smallestDeltaMag to represent the size of the ItemDrop.
-        //		collider.transform.position += smallestDir * (smallestDeltaMag + 0.2F);
-        //	}
-        //}
+                if (neighborChunk == null)
+                {
+                    // Only happens with really fast player and unloading, but shouldn't be
+                    // an issue with dirtiness.
+                    continue;
+                }
+
+                if (!neighborChunk.IsMaterializedPolytype)
+                {
+                    // We could technically render a dirty materialized monotype chunk, but
+                    // the save system wants all dirty chunks to be polytypes.
+                    ChunkManager.Instance.ScheduleImmediateReloadTask(neighborChunk);
+                }
+                ChunkManager.Instance.ScheduleImmediateRemeshTask(neighborChunk);
+            }
+        }
 
         private static IEnumerable<Vector3Int> GetNeighboringPositions(Vector3Int position)
         {

@@ -759,6 +759,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 3171374566700308663, guid: 6de2b385e5837ba45a04b5198c143d7c, type: 3}
+      propertyPath: crosshairUI
+      value: 
+      objectReference: {fileID: 1874407885}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

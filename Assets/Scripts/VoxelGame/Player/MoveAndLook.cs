@@ -1,58 +1,80 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
-[RequireComponent(typeof(CharacterController))]
-public class MoveAndLook : MonoBehaviour
+namespace VoxelGame.Player
 {
-	public float moveSpeed;
-	public float turnSpeed;
+    [RequireComponent(typeof(CharacterController))]
 
-	public Transform lookRoot;
+    public class MoveAndLook : MonoBehaviour
+    {
+        [SerializeField, FormerlySerializedAs("moveSpeed")]
+        private float _moveSpeed;
+        [SerializeField, FormerlySerializedAs("turnSpeed")]
+        private float _turnSpeed;
+        [SerializeField, FormerlySerializedAs("lookRoot")]
+        private Transform _lookRoot;
+        [SerializeField, FormerlySerializedAs("controller")]
+        private CharacterController _controller;
+        [SerializeField] 
+        private Transform crosshairUI = null;
 
-	public CharacterController controller;
+        private void Awake()
+        {
+            if (_controller == null)
+            {
+                _controller = GetComponent<CharacterController>();
+            }
 
-	[SerializeField]
-	private Transform crosshairUI = null;
+            Cursor.lockState = CursorLockMode.Locked;
+            if (crosshairUI != null)
+            {
+                crosshairUI.gameObject.SetActive(true);
+            }
+        }
 
-	private void Start()
-	{
-		if (controller == null)
-			controller = GetComponent<CharacterController>();
+        private void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                Cursor.lockState = CursorLockMode.None;
+                if (crosshairUI != null)
+                {
+                    crosshairUI.gameObject.SetActive(false);
+                }
+            }
+            if (Input.GetKeyDown(KeyCode.Mouse0) || Input.GetKeyDown(KeyCode.Mouse1))
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                if (crosshairUI != null)
+                {
+                    crosshairUI.gameObject.SetActive(true);
+                }
+            }
 
-		Cursor.lockState = CursorLockMode.Locked;
-		if (crosshairUI != null)
-		{ 
-			crosshairUI.gameObject.SetActive(true);
-		}
-	}
+            var moveInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+            var turnInput = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
 
-	// Update is called once per frame
-	void Update()
-	{
-		var moveInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-		var turnInput = new Vector2(Input.GetAxis("Mouse X")   , Input.GetAxis("Mouse Y"));
+            var moveDir = _lookRoot.forward * moveInput.y + _lookRoot.right * moveInput.x;
 
-		
-		var move_dir = lookRoot.forward * moveInput.y + lookRoot.right * moveInput.x;
+            if (Input.GetKey(KeyCode.Space))
+            {
+                // Make the Player move mostly upwards (the move amount will be normalized of course).
+                moveDir.y += 1;
+            }
+            if (moveDir.sqrMagnitude > 1)
+            {
+                // Make sure that we can't move faster than _moveSpeed;
+                moveDir.Normalize();
+            }
 
-		if (Input.GetKey(KeyCode.Space))
-		{
-			move_dir.y += 1;  // Make the Player move mostly upwards (the move amount will be normalized of course).
-		}
+            var transSpeed = Input.GetKey(KeyCode.LeftShift) ? _moveSpeed * 2.5F : _moveSpeed;
 
-		if (move_dir.sqrMagnitude > 1)
-		{  // Make sure that we can't move faster than move_speed;
-			move_dir.Normalize();
-		}
+            _controller.Move(moveDir * transSpeed * Time.deltaTime);
 
-		var trans_speed = Input.GetKey(KeyCode.LeftShift) ? moveSpeed * 2.5F : moveSpeed;
+            var prevRot = _lookRoot.rotation.eulerAngles;
 
-		controller.Move(move_dir * trans_speed * Time.deltaTime);
-
-		var prev_rot = lookRoot.rotation.eulerAngles;
-
-		lookRoot.localRotation = Quaternion.Euler(prev_rot.x - turnInput.y * turnSpeed * Time.deltaTime, 0, 0);
-		transform.Rotate(0, turnInput.x * turnSpeed * Time.deltaTime, 0);
-	}
+            _lookRoot.localRotation = Quaternion.Euler(prevRot.x - turnInput.y * _turnSpeed * Time.deltaTime, 0, 0);
+            transform.Rotate(0, turnInput.x * _turnSpeed * Time.deltaTime, 0);
+        }
+    }
 }
