@@ -1,24 +1,36 @@
 using System;
-using System.Buffers;
+using System.Collections.Generic;
+using VoxelGame.Terrain.Vegetation;
 
 namespace VoxelGame.Terrain
 {
-    public class PolytypeChunkData : IDisposable
+    public sealed class PolytypeChunkData : IDisposable
     {
-        public VoxelType[] Data;
-
+        public VoxelType[] Types 
+            => _pooledData.Types;
+        public Dictionary<int, VegetationDataRef> IndexToVegetationDataRef 
+            => _pooledData.PooledVegetationData.IndexToVegetationDataRef;
+        
         public PolytypeChunkData()
         {
-            Data = ArrayPool<VoxelType>.Shared.Rent(ChunkConfig.Volume);
+            _pooledData = PolytypeChunkPooledData.Pool.Borrow();
         }
 
         public void Dispose()
         {
-            if (Data != null)
+            if (_pooledData == null)
             {
-                ArrayPool<VoxelType>.Shared.Return(Data);
-                Data = null;
+                return;
             }
+            PolytypeChunkPooledData.Pool.Return(_pooledData);
+            _pooledData = null;
         }
+
+        public void EnsureDictionaryCapacity(int targetCapacity)
+        {
+            _pooledData.EnsureDictionaryCapacity(targetCapacity);
+        }
+
+        private PolytypeChunkPooledData _pooledData;
     }
 }

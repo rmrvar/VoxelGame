@@ -70,6 +70,7 @@ namespace VoxelGame.Saving
             string dirtyChunkIdsText = SerializeVectorList(_dirtyChunkIds.ToList());
             PlayerPrefs.SetString("DIRTY_CHUNK_IDS", dirtyChunkIdsText);
 
+
             foreach (Vector3Int chunkId in _dirtyChunkIds)
             {
                 string saveKey = $"CHUNK_{SerializeVector(chunkId, "_")}";
@@ -82,10 +83,11 @@ namespace VoxelGame.Saving
 
                 Debug.Assert(chunk.IsMaterializedPolytype);
 
+                VoxelType[] types = chunk.PolyData.Types;
                 byte[] bytes = new byte[ChunkConfig.Volume];
                 for (int i = 0; i < bytes.Length; ++i)
                 {
-                    bytes[i] = (byte)chunk.PolyData.Data[i];
+                    bytes[i] = (byte)types[i];
                 }
                 string saveData = Convert.ToBase64String(bytes);
                 PlayerPrefs.SetString(saveKey, saveData);

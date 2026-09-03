@@ -25,6 +25,17 @@ namespace VoxelGame.Terrain.Vegetation
             _types = types;
         }
 
+        public void GetPosition(int i, ref Vector3Int position)
+        {
+            // TODO
+        }
+
+        public Vector3Int GetPosition(int i)
+        {
+            // TODO
+            return default;
+        }
+
         public VoxelType GetType(int i)
         {
             return _types[i];

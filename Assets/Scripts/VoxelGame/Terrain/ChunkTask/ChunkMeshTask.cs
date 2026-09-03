@@ -105,6 +105,7 @@ namespace VoxelGame.Terrain.ChunkTask
         {
             Debug.Assert(chunk.IsMaterialized);
 
+            VoxelType[] types = chunk.PolyData?.Types;
             bool isMonotype = chunk.IsMaterializedMonotype(out VoxelType monotype);
 
             for (int z = 0; z < ChunkConfig.SizeZ; ++z)
@@ -119,7 +120,7 @@ namespace VoxelGame.Terrain.ChunkTask
                 else
                 {
                     int srcIndex = y * ChunkConfig.StrideY + z * ChunkConfig.StrideZ;
-                    Array.Copy(Chunk.PolyData.Data, srcIndex, destination, dstIndex, ChunkConfig.SizeX);
+                    Array.Copy(types, srcIndex, destination, dstIndex, ChunkConfig.SizeX);
                 }
             }
         }
@@ -175,7 +176,7 @@ namespace VoxelGame.Terrain.ChunkTask
                 Debug.Assert(neighbor.IsMaterializedPolytype);
                 CopyFace(
                     destination,
-                    neighbor.PolyData.Data,
+                    neighbor.PolyData.Types,
                     axis,
                     sign
                   );

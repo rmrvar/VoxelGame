@@ -83,7 +83,7 @@ namespace VoxelGame.Player
 
         private void UpdateVoxel(Chunk chunk, int i, VoxelType type)
         {
-            chunk.PolyData.Data[i] = type;
+            chunk.PolyData.Types[i] = type;
             ++chunk.VoxelVersion;
             ChunkManager.Instance.SaveSystem.MarkDirty(chunk.Id);
         }

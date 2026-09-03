@@ -88,7 +88,7 @@ namespace VoxelGame.Terrain.ChunkTask
         private ChunkLoadTaskOut Generate(ChunkLoadTaskIn input, CancellationToken cancellationToken)
         {
             ChunkLoadTaskPooledIn pooledIn = input.PooledIn;
-
+            VoxelType[] types = pooledIn.PolytypeChunkData.Types;
             Vector3Int chunkPosition = input.Position;
 
             // HEIGHTMAP CALCULATION
@@ -143,7 +143,7 @@ namespace VoxelGame.Terrain.ChunkTask
 
                     int typeIndex = x + y * ChunkConfig.StrideY + z * ChunkConfig.StrideZ;
                     VoxelType type = BiomeLogic.GetVoxelType(worldX, worldY, worldZ, height, input.Seed);
-                    pooledIn.PolytypeChunkData.Data[typeIndex] = type;
+                    types[typeIndex] = type;
 
                     if (isMonotype)
                     {
@@ -158,7 +158,6 @@ namespace VoxelGame.Terrain.ChunkTask
                     }
                 }
             }
-
 
             // VEGETATION DISK
             for (int z = 0; z < ChunkConfig.PoissonDiskSizeZ; ++z)
@@ -230,9 +229,9 @@ namespace VoxelGame.Terrain.ChunkTask
 
                     // Place a tree.
                     int polytypeIndex = newLocalX + newLocalY * ChunkConfig.StrideY + newLocalZ * ChunkConfig.StrideZ;
-                    if (pooledIn.PolytypeChunkData.Data[polytypeIndex].Is(VoxelType.AIR))
+                    if (types[polytypeIndex].Is(VoxelType.AIR))
                     {
-                        pooledIn.PolytypeChunkData.Data[polytypeIndex] = vegetationData.GetType(i);
+                        types[polytypeIndex] = vegetationData.GetType(i);
                         isMonotype = false;
                     }
                 });
@@ -273,9 +272,9 @@ namespace VoxelGame.Terrain.ChunkTask
                 }
 
                 int polytypeIndex = localX + localY * ChunkConfig.StrideY + localZ * ChunkConfig.StrideZ;
-                if (pooledIn.PolytypeChunkData.Data[polytypeIndex].Is(VoxelType.AIR))
+                if (types[polytypeIndex].Is(VoxelType.AIR))
                 {
-                    pooledIn.PolytypeChunkData.Data[polytypeIndex] = grassType;
+                    types[polytypeIndex] = grassType;
                 }
             }
 
@@ -293,10 +292,13 @@ namespace VoxelGame.Terrain.ChunkTask
 
         private ChunkLoadTaskOut Parse(ChunkLoadTaskIn input, CancellationToken cancellationToken)
         {
+            ChunkLoadTaskPooledIn pooledIn = input.PooledIn;
+            VoxelType[] types = pooledIn.PolytypeChunkData.Types;
             byte[] saveData = input.SaveData;
+
             for (int i = 0; i < saveData.Length; ++i)
             {
-                input.PooledIn.PolytypeChunkData.Data[i] = (VoxelType)saveData[i];
+                types[i] = (VoxelType)saveData[i];
             }
 
             ChunkLoadTaskOut output = new()

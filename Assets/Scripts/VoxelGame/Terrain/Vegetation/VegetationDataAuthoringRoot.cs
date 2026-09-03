@@ -10,11 +10,15 @@ namespace VoxelGame.Terrain.Vegetation
         public int Radius { get; private set; }
         [field: SerializeField]
         public int Height { get; private set; }
+        [field: SerializeField]
+        [field: Tooltip("Minimum distance apart this vegetation data can spawn.")]
+        public int MinDistance { get; private set; } = 1;
 
         private void OnValidate()
         {
             Radius = Mathf.Max(1, Radius);
             Height = Mathf.Max(1, Height);
+            MinDistance = Mathf.Max(1, MinDistance);
         }
 
         private void OnDrawGizmos()
