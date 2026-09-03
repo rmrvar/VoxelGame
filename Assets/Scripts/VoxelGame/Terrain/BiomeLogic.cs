@@ -43,12 +43,11 @@ namespace VoxelGame.Terrain
             return (Mathf.Min(p1, p3) + Mathf.Max(p2, p4)) * 0.5F;
         }
 
-        public static bool TryGetMinTreeDistance(int x, int z, float t, int seed, out int minTreeDistance)
+        public static float GetTreeProbability(int x, int z, float t, int seed)
         {
             if (t > 0.8)
             {
-                minTreeDistance = 0;
-                return false;
+                return 0.01F; // Very infrequent on mountains.
             }
 
             // Tree biome
@@ -58,21 +57,16 @@ namespace VoxelGame.Terrain
 
             if (p < 0.5F)
             {
-                minTreeDistance = 0;
-                return false; // Biome decided there is no tree here.
+                return 0.01F; // Very infrequent in deserts.
             }
 
             float t2 = 1 - (p - 0.5F);
             float combinedT = Mathf.Min(t, t2);
 
-            // Remap combinedT.
-            float newT = Mathf.Clamp01(Mathf.InverseLerp(0.1F, 0.4F, combinedT));
-
-            minTreeDistance = Mathf.FloorToInt(Mathf.Lerp(3, 10, newT));
-            return true;
+            return combinedT;
         }
 
-        public static float GetGrassChance(int x, int z, float t, int seed)
+        public static float GetGrassProbability(int x, int z, float t, int seed)
         {
             float absDelta = Mathf.Clamp01(Mathf.Abs(t - 0.4F) / 0.2F);
             return Mathf.Lerp(0.05F, 0.0001F, absDelta);

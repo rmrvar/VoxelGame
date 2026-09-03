@@ -24,7 +24,7 @@ namespace VoxelGame.Terrain
         public static int PStrideY => _pStrideY;
         public static int PStrideZ => _pStrideZ;
 
-        public const int PoissonDiskRadius = 10;
+        public const int PoissonDiskRadius = 3;
 
         public static int PoissonDiskSizeX { get; private set; }
         public static int PoissonDiskSizeZ { get; private set; }

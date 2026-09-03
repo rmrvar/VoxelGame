@@ -6,7 +6,7 @@ namespace VoxelGame.Terrain.ChunkTask
     {
         public readonly int[] Heightmap;
         public readonly float[] Slidermap;
-        public readonly int[] PoissonDisk;
+        public readonly uint[] PoissonDisk;
         public PolytypeChunkData PolytypeChunkData;
 
         public static readonly Pool<ChunkLoadTaskPooledIn> Pool = new(
@@ -36,7 +36,7 @@ namespace VoxelGame.Terrain.ChunkTask
             Slidermap = new float[heightmapVolume];
 
             int poissonDiskVolume = ChunkConfig.PoissonDiskVolume;
-            PoissonDisk = new int[poissonDiskVolume];
+            PoissonDisk = new uint[poissonDiskVolume];
         }
     }
 }

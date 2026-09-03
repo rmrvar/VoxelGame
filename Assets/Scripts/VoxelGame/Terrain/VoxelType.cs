@@ -12,8 +12,12 @@ namespace VoxelGame.Terrain
 
         GRASS_SHORT,
 
+        GRASS_POPPY,
+        GRASS_DAISY,
+        GRASS_DANDELION,
+     
         GRASS_BOT,
-        GRASS_TOP
+        GRASS_TOP,
 
         // IMPORTANT!!! For any new type, must add mapping to MapVoxelTypeToVoxelMaterialType and MapVoxelTypeToVoxelGeometryType!
     }
@@ -100,15 +104,18 @@ namespace VoxelGame.Terrain
         {
             return type switch
             {
-                VoxelType.AIR         => VoxelMaterialType.TRANSPARENT,
-                VoxelType.DIRT        => VoxelMaterialType.OPAQUE,
-                VoxelType.GRASS       => VoxelMaterialType.OPAQUE,
-                VoxelType.STONE       => VoxelMaterialType.OPAQUE,
-                VoxelType.OAK_LOG     => VoxelMaterialType.OPAQUE,
-                VoxelType.OAK_LEAVES  => VoxelMaterialType.CUTOUT,
-                VoxelType.GRASS_SHORT => VoxelMaterialType.CUTOUT,
-                VoxelType.GRASS_BOT   => VoxelMaterialType.CUTOUT,
-                VoxelType.GRASS_TOP   => VoxelMaterialType.CUTOUT,
+                VoxelType.AIR             => VoxelMaterialType.TRANSPARENT,
+                VoxelType.DIRT            => VoxelMaterialType.OPAQUE,
+                VoxelType.GRASS           => VoxelMaterialType.OPAQUE,
+                VoxelType.STONE           => VoxelMaterialType.OPAQUE,
+                VoxelType.OAK_LOG         => VoxelMaterialType.OPAQUE,
+                VoxelType.OAK_LEAVES      => VoxelMaterialType.CUTOUT,
+                VoxelType.GRASS_SHORT     => VoxelMaterialType.CUTOUT,
+                VoxelType.GRASS_BOT       => VoxelMaterialType.CUTOUT,
+                VoxelType.GRASS_TOP       => VoxelMaterialType.CUTOUT,
+                VoxelType.GRASS_POPPY     => VoxelMaterialType.CUTOUT,
+                VoxelType.GRASS_DAISY     => VoxelMaterialType.CUTOUT,
+                VoxelType.GRASS_DANDELION => VoxelMaterialType.CUTOUT,
 
                 // Add new mappings above.
                 _ => default
@@ -119,15 +126,18 @@ namespace VoxelGame.Terrain
         {
             return type switch
             {
-                VoxelType.AIR         => VoxelGeometryType.CUBE,
-                VoxelType.DIRT        => VoxelGeometryType.CUBE,
-                VoxelType.GRASS       => VoxelGeometryType.CUBE,
-                VoxelType.STONE       => VoxelGeometryType.CUBE,
-                VoxelType.OAK_LOG     => VoxelGeometryType.CUBE,
-                VoxelType.OAK_LEAVES  => VoxelGeometryType.CUBE,
-                VoxelType.GRASS_SHORT => VoxelGeometryType.CROSS,
-                VoxelType.GRASS_BOT   => VoxelGeometryType.CROSS,
-                VoxelType.GRASS_TOP   => VoxelGeometryType.CROSS,
+                VoxelType.AIR             => VoxelGeometryType.CUBE,
+                VoxelType.DIRT            => VoxelGeometryType.CUBE,
+                VoxelType.GRASS           => VoxelGeometryType.CUBE,
+                VoxelType.STONE           => VoxelGeometryType.CUBE,
+                VoxelType.OAK_LOG         => VoxelGeometryType.CUBE,
+                VoxelType.OAK_LEAVES      => VoxelGeometryType.CUBE,
+                VoxelType.GRASS_SHORT     => VoxelGeometryType.CROSS,
+                VoxelType.GRASS_BOT       => VoxelGeometryType.CROSS,
+                VoxelType.GRASS_TOP       => VoxelGeometryType.CROSS,
+                VoxelType.GRASS_POPPY     => VoxelGeometryType.CROSS,
+                VoxelType.GRASS_DAISY     => VoxelGeometryType.CROSS,
+                VoxelType.GRASS_DANDELION => VoxelGeometryType.CROSS,
 
                 // Add new mappings above.
                 _ => default
