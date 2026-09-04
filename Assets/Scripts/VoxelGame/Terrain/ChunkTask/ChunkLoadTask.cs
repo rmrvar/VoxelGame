@@ -225,7 +225,7 @@ namespace VoxelGame.Terrain.ChunkTask
                     }
                 }
 
-                int treeIndex = (int)(probabilityValue % VegetationSystem.Instance.TreeCount);
+                int treeIndex = (int)(probabilityValue % vegetationSystem.TreeCount);
                 vegetationData = vegetationSystem.GetTree(treeIndex);
                 vegetationDataIndex = vegetationSystem.GetCombinedIndex(treeIndex, isTree: true);
                 goto placeVegetation;
@@ -237,7 +237,7 @@ namespace VoxelGame.Terrain.ChunkTask
                     goto placeNothing; // No grass here.
                 }
 
-                int grassIndex = (int)(probabilityValue % VegetationSystem.Instance.GrassCount);
+                int grassIndex = (int)(probabilityValue % vegetationSystem.GrassCount);
                 vegetationData = vegetationSystem.GetGrass(grassIndex);
                 vegetationDataIndex = vegetationSystem.GetCombinedIndex(grassIndex, isTree: false);
 
@@ -248,7 +248,7 @@ namespace VoxelGame.Terrain.ChunkTask
                 vegetationData.ForEach((i, x, y, z) =>
                 {
                     VoxelType type = vegetationData.GetType(i);
-                    if (type.Is(VoxelType.AIR))
+                    if (type == VoxelType.AIR)
                     {
                         return; // Not a voxel.
                     }
@@ -262,10 +262,10 @@ namespace VoxelGame.Terrain.ChunkTask
                         return; // Out of bounds.
                     }
 
-                    // Place the vegetation voxel.
                     int polytypeIndex = newLocalX + newLocalY * ChunkConfig.StrideY + newLocalZ * ChunkConfig.StrideZ;
-                    if (types[polytypeIndex].Is(VoxelType.AIR))
+                    if (types[polytypeIndex] == VoxelType.AIR)
                     {
+                        // Place the vegetation voxel.
                         types[polytypeIndex] = vegetationData.GetType(i);
                         indexToVegetationDataRef[polytypeIndex] = new VegetationDataRef()
                         {

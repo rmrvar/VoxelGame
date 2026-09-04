@@ -238,7 +238,7 @@ GameObject:
   - component: {fileID: 7324027478302872880}
   - component: {fileID: 353645850060703695}
   m_Layer: 6
-  m_Name: ChunkMono
+  m_Name: ChunkPooledMono
   m_TagString: Untagged
   m_Icon: {fileID: 6519382022992737161, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0

@@ -32,7 +32,7 @@ namespace VoxelGame.Terrain.ChunkTask
             Debug.Assert(!_isRemesh);
 
             bool isMaterializedEmpty =
-                Chunk.IsMaterializedMonotype(out VoxelType voxelData) && voxelData.Is(VoxelType.AIR);
+                Chunk.IsMaterializedMonotype(out VoxelType voxelData) && voxelData == VoxelType.AIR;
             return isMaterializedEmpty;
         }
 
@@ -72,7 +72,7 @@ namespace VoxelGame.Terrain.ChunkTask
                 return;
             }
 
-            if (Chunk.Mono == null)
+            if (Chunk.PooledMono == null)
             {
                 Chunk.InitMono();
             }
@@ -80,10 +80,10 @@ namespace VoxelGame.Terrain.ChunkTask
             GreedyMesherWorkspace ws1 = output.GreedyMesherWorkspace;
             GrassMesherWorkspace ws2 = output.GrassMesherWorkspace;
 
-            ws1.FillMesh(Chunk.Mono.ColliderMesh);
-            ws2.FillMesh(Chunk.Mono.TriggerMesh);
-            Chunk.Mono.Refresh();
-            Chunk.Mono.IsVisible = true;
+            ws1.FillMesh(Chunk.PooledMono.ColliderMesh);
+            ws2.FillMesh(Chunk.PooledMono.TriggerMesh);
+            Chunk.PooledMono.Refresh();
+            Chunk.PooledMono.IsVisible = true;
             Chunk.MeshVersion = MeshVersion;
         }
 

@@ -19,7 +19,7 @@ namespace VoxelGame.Terrain
         GRASS_BOT,
         GRASS_TOP,
 
-        // IMPORTANT!!! For any new type, must add mapping to MapVoxelTypeToVoxelMaterialType and MapVoxelTypeToVoxelGeometryType!
+        // IMPORTANT!!! For any new type, must add mapping to MapVoxelTypeToVoxelMaterialType, MapVoxelTypeToVoxelGeometryType and MapVoxelTypeToVoxelTintType!
     }
 
     public enum VoxelMaterialType : byte
@@ -35,6 +35,12 @@ namespace VoxelGame.Terrain
         CROSS
     }
 
+    public enum VoxelTintType : byte
+    {
+        NO_TINT,
+        TINT
+    }
+
     public static class VoxelTypeExtensions
     {
         static VoxelTypeExtensions()
@@ -42,35 +48,10 @@ namespace VoxelGame.Terrain
             for (int i = 0; i < 256; ++i)
             {
                 VoxelType type = (VoxelType)i;
-                VoxelType cleanType = type.Clean();
-                _materialTypes[i] = MapVoxelTypeToVoxelMaterialType(cleanType);
-                _geometryTypes[i] = MapVoxelTypeToVoxelGeometryType(cleanType);
+                _materialTypes[i] = MapVoxelTypeToVoxelMaterialType(type);
+                _geometryTypes[i] = MapVoxelTypeToVoxelGeometryType(type);
+                _tintTypes[i] = MapVoxelTypeToVoxelTintType(type);
             }
-        }
-
-        public static bool Is(this VoxelType type, VoxelType other)
-        {
-            return ((byte)type & CLEAN_MASK) == (byte)other;
-        }
-
-        public static VoxelType Dirty(this VoxelType type)
-        {
-            return (VoxelType)((byte)type | DIRTY_MASK);
-        }
-
-        public static VoxelType Clean(this VoxelType type)
-        {
-            return (VoxelType)((byte)type & CLEAN_MASK);
-        }
-
-        public static bool IsDirty(this VoxelType type)
-        {
-            return ((byte)type & DIRTY_MASK) != 0;
-        }
-
-        public static bool IsClean(this VoxelType type)
-        {
-            return ((byte)type & DIRTY_MASK) == 0;
         }
 
         public static VoxelMaterialType GetMaterialType(this VoxelType type)
@@ -78,6 +59,9 @@ namespace VoxelGame.Terrain
 
         public static VoxelGeometryType GetGeometryType(this VoxelType type)
             => _geometryTypes[(byte)type];
+
+        public static VoxelTintType GetTintType(this VoxelType type)
+            => _tintTypes[(byte)type];
 
         public static bool IsOpaque(this VoxelType type)
             => type.GetMaterialType() == VoxelMaterialType.OPAQUE;
@@ -144,10 +128,30 @@ namespace VoxelGame.Terrain
             };
         }
 
-        private const byte DIRTY_MASK = 0B1000_0000;
-        private const byte CLEAN_MASK = 0B0111_1111;
+        private static VoxelTintType MapVoxelTypeToVoxelTintType(VoxelType type)
+        {
+            return type switch
+            {
+                VoxelType.AIR             => VoxelTintType.NO_TINT,
+                VoxelType.DIRT            => VoxelTintType.NO_TINT,
+                VoxelType.GRASS           => VoxelTintType.TINT,
+                VoxelType.STONE           => VoxelTintType.NO_TINT,
+                VoxelType.OAK_LOG         => VoxelTintType.NO_TINT,
+                VoxelType.OAK_LEAVES      => VoxelTintType.TINT,
+                VoxelType.GRASS_SHORT     => VoxelTintType.TINT,
+                VoxelType.GRASS_BOT       => VoxelTintType.TINT,
+                VoxelType.GRASS_TOP       => VoxelTintType.TINT,
+                VoxelType.GRASS_POPPY     => VoxelTintType.NO_TINT,
+                VoxelType.GRASS_DAISY     => VoxelTintType.NO_TINT,
+                VoxelType.GRASS_DANDELION => VoxelTintType.NO_TINT,
+
+                // Add new mappings above.
+                _ => default
+            };
+        }
 
         private static readonly VoxelMaterialType[] _materialTypes = new VoxelMaterialType[256];
         private static readonly VoxelGeometryType[] _geometryTypes = new VoxelGeometryType[256];
+        private static readonly VoxelTintType[] _tintTypes = new VoxelTintType[256];
     }
 }

@@ -6,7 +6,7 @@ namespace VoxelGame.Terrain.Meshing
     public sealed class GrassMesherWorkspace
     {
         public readonly List<Vector3> Vertices;
-        public readonly List<Vector3> UV3s;
+        public readonly List<Vector4> UV4s;
         public readonly List<Vector3> Normals;
         public readonly List<int> Quads;
 
@@ -17,7 +17,7 @@ namespace VoxelGame.Terrain.Meshing
             const int SIZE_PER_QUAD = 4;
             int initialListSize = chunkSize.x * chunkSize.z * QUADS_PER_COL * SIZE_PER_QUAD;
             Vertices = new List<Vector3>(initialListSize);
-            UV3s = new List<Vector3>(initialListSize);
+            UV4s = new List<Vector4>(initialListSize);
             Normals = new List<Vector3>(initialListSize);
             Quads = new List<int>(initialListSize);
         }
@@ -25,7 +25,7 @@ namespace VoxelGame.Terrain.Meshing
         public void Clear()
         {
             Vertices.Clear();
-            UV3s.Clear();
+            UV4s.Clear();
             Normals.Clear();
             Quads.Clear();
         }
@@ -36,7 +36,7 @@ namespace VoxelGame.Terrain.Meshing
             mesh.subMeshCount = 1;
             mesh.SetVertices(Vertices);
             mesh.SetNormals(Normals);
-            mesh.SetUVs(0, UV3s);
+            mesh.SetUVs(0, UV4s);
             mesh.SetIndices(Quads, MeshTopology.Quads, 0);
             mesh.RecalculateBounds();
         }

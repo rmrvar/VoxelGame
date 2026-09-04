@@ -1,13 +1,12 @@
 using System;
 using System.Threading;
 using UnityEngine;
-using static VoxelGame.Terrain.VoxelData;
 
 namespace VoxelGame.Terrain
 {
 	public class Chunk : IDisposable
     {
-        public ChunkMono Mono { get; private set; }
+        public ChunkPooledMono PooledMono { get; private set; }
 
         public int MeshVersion { get; set; } = -1;
         
@@ -30,6 +29,10 @@ namespace VoxelGame.Terrain
 
         public MonotypeChunkData MonoData => _monoData;
         public PolytypeChunkData PolyData { get; private set; }
+
+        public bool IsDirty => DirtyCount > 0;
+
+        public int DirtyCount { get; set; }
 
         public Chunk(Vector3Int id)
         {
@@ -70,10 +73,10 @@ namespace VoxelGame.Terrain
         }
 
         public bool IsUnmaterializedSolid
-            => !IsMaterialized && !_monoData.Data.Is(VoxelType.AIR);
+            => !IsMaterialized && _monoData.Data != VoxelType.AIR;
 
         public bool IsUnmaterializedEmpty
-            => !IsMaterialized && _monoData.Data.Is(VoxelType.AIR);
+            => !IsMaterialized && _monoData.Data == VoxelType.AIR;
 
         public bool IsMaterialized { get; private set; }
 
@@ -150,11 +153,11 @@ namespace VoxelGame.Terrain
 
         public void InitMono()
         {
-            Debug.Assert(Mono == null);
-            Mono = ChunkManager.Instance.ChunkMonoPool.Borrow();
-            Mono.transform.position = Position;
+            Debug.Assert(PooledMono == null);
+            PooledMono = ChunkManager.Instance.ChunkMonoPool.Borrow();
+            PooledMono.transform.position = Position;
 #if UNITY_EDITOR
-            Mono.gameObject.name = Id.ToString();
+            PooledMono.gameObject.name = Id.ToString();
 #endif
         }
 
@@ -163,10 +166,10 @@ namespace VoxelGame.Terrain
             _cts.Cancel();
             _cts.Dispose();
 
-            if (Mono != null)
+            if (PooledMono != null)
             {
-                ChunkManager.Instance.ChunkMonoPool.Return(Mono);
-                Mono = null;
+                ChunkManager.Instance.ChunkMonoPool.Return(PooledMono);
+                PooledMono = null;
             }
 
             PolyData?.Dispose();

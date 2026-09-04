@@ -6,10 +6,11 @@ namespace VoxelGame.Terrain
 {
     public sealed class PolytypeChunkData : IDisposable
     {
-        public VoxelType[] Types 
-            => _pooledData.Types;
+        public VoxelType[] Types => _pooledData.Types;
+        public Dictionary<int, VoxelType> IndexToOriginalType 
+            => _pooledData.IndexToOriginalType.IndexToT;
         public Dictionary<int, VegetationDataRef> IndexToVegetationDataRef 
-            => _pooledData.PooledVegetationData.IndexToVegetationDataRef;
+            => _pooledData.IndexToVegetationDataRef.IndexToT;
         
         public PolytypeChunkData()
         {
@@ -26,9 +27,14 @@ namespace VoxelGame.Terrain
             _pooledData = null;
         }
 
-        public void EnsureDictionaryCapacity(int targetCapacity)
+        public void EnsureCapacityOfIndexToOriginalType(int targetCapacity)
         {
-            _pooledData.EnsureDictionaryCapacity(targetCapacity);
+            _pooledData.EnsureCapacityOfIndexToOriginalType(targetCapacity);
+        }
+
+        public void EnsureCapacityOfIndexToVegetationDataRef(int targetCapacity)
+        {
+            _pooledData.EnsureCapacityOfIndexToVegetationDataRef(targetCapacity);
         }
 
         private PolytypeChunkPooledData _pooledData;

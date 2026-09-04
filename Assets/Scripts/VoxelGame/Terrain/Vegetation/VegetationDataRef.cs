@@ -12,6 +12,7 @@
         // Potential uses:
         // - 1 bit: reflection across X
         // - 2 bits: rotation around Y
+        // - 1 bit: was placed
         // - X bits: distance from vegetation root (might be inferrable from TypeIndex)
         // - X bits: group ID
         public byte Reserved;

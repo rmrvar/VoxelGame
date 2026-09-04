@@ -6,6 +6,8 @@ Shader "Terrain/ChunkCutoutShader"
 	    
     	[Enum(UnityEngine.Rendering.CullMode)]
 	    _ShouldCull ("Should Cull", Float) = 2
+    	
+        _Tint ("Tint", Color) = (0.35, 0.75, 0.20, 1)
     }
 
     SubShader
@@ -29,23 +31,27 @@ Shader "Terrain/ChunkCutoutShader"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
-            struct v2f
+            struct FragIn
             {
                 float4 positionCS : SV_POSITION;
-                float3 uv : TEXCOORD0;
+                float4 uv : TEXCOORD0;
                 float lighting : TEXCOORD1;
             };
 
             TEXTURE2D_ARRAY(_TextureArray);
             SAMPLER(sampler_TextureArray);
 
-            v2f vert(
+            CBUFFER_START(UnityPerMaterial)
+                float4 _Tint;
+            CBUFFER_END
+
+            FragIn vert(
                 float4 positionOS : POSITION,
                 float3 normalOS : NORMAL,
-                float3 uv : TEXCOORD0
+                float4 uv : TEXCOORD0
               )
             {
-                v2f o;
+                FragIn o;
 
                 o.positionCS = TransformObjectToHClip(positionOS.xyz);
                 o.uv = uv;
@@ -61,7 +67,7 @@ Shader "Terrain/ChunkCutoutShader"
             }
 
             half4 frag(
-			    v2f i,
+			    FragIn i,
 			    bool isFrontFace : SV_IsFrontFace
 			  ) : SV_Target
             {
@@ -81,7 +87,12 @@ Shader "Terrain/ChunkCutoutShader"
 			    }
                 actualLighting = lerp(0.3, 1, saturate(actualLighting));
 
-                return half4(tex.rgb * actualLighting, 1);
+                half3 base = tex.rgb;
+                bool shouldTint = i.uv.w;
+                half3 tint = lerp(1, _Tint, shouldTint);
+                half3 rgb = base * tint * actualLighting;
+
+                return half4(rgb, 1);
             }
 
             ENDHLSL

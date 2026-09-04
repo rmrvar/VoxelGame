@@ -16,6 +16,11 @@ namespace VoxelGame.Saving
             return _dirtyChunkIds.Contains(chunkId);
         }
 
+        public void MarkClean(Vector3Int chunkId)
+        {
+            _dirtyChunkIds.Remove(chunkId);
+        }
+
         public void MarkDirty(Vector3Int chunkId)
         {
             _dirtyChunkIds.Add(chunkId);
@@ -69,7 +74,6 @@ namespace VoxelGame.Saving
 
             string dirtyChunkIdsText = SerializeVectorList(_dirtyChunkIds.ToList());
             PlayerPrefs.SetString("DIRTY_CHUNK_IDS", dirtyChunkIdsText);
-
 
             foreach (Vector3Int chunkId in _dirtyChunkIds)
             {

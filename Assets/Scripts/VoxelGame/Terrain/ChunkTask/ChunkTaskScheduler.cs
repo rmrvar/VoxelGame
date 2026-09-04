@@ -110,7 +110,7 @@ namespace VoxelGame.Terrain.ChunkTask
             _pendingTasks.Clear();
         }
 
-        private readonly List<ChunkTask> _pendingTasks = new(1000);
+        private readonly List<ChunkTask> _pendingTasks = new(5000);
         private readonly FastPriorityQueue<ChunkTask> _chunkTasks = new(50000);
 
         private readonly int _maxActiveTasks;

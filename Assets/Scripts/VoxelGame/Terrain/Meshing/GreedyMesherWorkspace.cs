@@ -10,7 +10,7 @@ namespace VoxelGame.Terrain.Meshing
         public readonly int[] TopQuadIndices;
 
         public readonly List<Vector3> Vertices;
-        public readonly List<Vector3> UV3s;
+        public readonly List<Vector4> UV4s;
         public readonly List<Vector3> Normals;
         public readonly List<int> OpaqueQuads;
         public readonly List<int> CutoutQuads;
@@ -30,7 +30,7 @@ namespace VoxelGame.Terrain.Meshing
             const int QUADS_PER_VOXEL = 6;
             int initialListSize = ChunkConfig.Volume * QUADS_PER_VOXEL;
             Vertices = new List<Vector3>(initialListSize);
-            UV3s = new List<Vector3>(initialListSize);
+            UV4s = new List<Vector4>(initialListSize);
             Normals = new List<Vector3>(initialListSize);
             OpaqueQuads = new List<int>(initialListSize);
             CutoutQuads = new List<int>(initialListSize);
@@ -40,7 +40,7 @@ namespace VoxelGame.Terrain.Meshing
         {
             // Arrays are overwritten completely by meshing.
             Vertices.Clear();
-            UV3s.Clear();
+            UV4s.Clear();
             Normals.Clear();
             OpaqueQuads.Clear();
             CutoutQuads.Clear();
@@ -52,7 +52,7 @@ namespace VoxelGame.Terrain.Meshing
             mesh.subMeshCount = 2;
             mesh.SetVertices(Vertices);
             mesh.SetNormals(Normals);
-            mesh.SetUVs(0, UV3s);
+            mesh.SetUVs(0, UV4s);
             mesh.SetIndices(OpaqueQuads, MeshTopology.Quads, 0);
             mesh.SetIndices(CutoutQuads, MeshTopology.Quads, 1);
             mesh.RecalculateBounds();

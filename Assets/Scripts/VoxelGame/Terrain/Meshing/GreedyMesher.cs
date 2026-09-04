@@ -72,11 +72,11 @@ namespace VoxelGame.Terrain.Meshing
                     int i1 = x * xStride + y * yStride + d * dStride;
                     VoxelType thisType = voxels[i1];
 
-                    int xm1 = x - 1;
-                    int ym1 = y - 1;
-
-                    int i2 = xm1 + ym1 * sliceSize.x;
-                    VoxelType backType = voxels[i1 + dStride * (normalSign == 0 ? +1 : -1)];
+                    int i2 = (x - 1) + (y - 1) * sliceSize.x;
+                    int backOffset = normalSign == 0 
+                        ? +dStride 
+                        : -dStride;
+                    VoxelType backType = voxels[i1 + backOffset];
 
                     if (thisType.IsCube() && backType.IsSeeThrough())
                     {
@@ -101,7 +101,7 @@ namespace VoxelGame.Terrain.Meshing
 
                     VoxelType type = types[i];
 
-                    if (type.Is(VoxelType.AIR))
+                    if (type == VoxelType.AIR)
                     {
                         // Air voxels do not have quads.
                         topQuadIndices[x] = -1;
@@ -110,7 +110,7 @@ namespace VoxelGame.Terrain.Meshing
 
                     ref Quad quad = ref quads[numQuads];
                     
-                    if (!lftType.Is(type))
+                    if (lftType != type)
                     {
 						// New quad type.
                         quad.Type = type;
@@ -126,7 +126,7 @@ namespace VoxelGame.Terrain.Meshing
                         ++quad.MaxX;
                     }
 
-                    if (x < sliceSize.x - 1 && types[i + 1].Is(type))
+                    if (x < sliceSize.x - 1 && types[i + 1] == type)
                     {
 						// Quad keeps going.
                         topQuadIndices[x] = -1;
@@ -144,7 +144,7 @@ namespace VoxelGame.Terrain.Meshing
                     {
 						// Has a top quad.
                         ref Quad topQuad = ref quads[topQuadIndex];
-                        if (topQuad.MinX == quad.MinX && topQuad.Type.Is(quad.Type))
+                        if (topQuad.MinX == quad.MinX && topQuad.Type == quad.Type)
                         {
 							// This quad gets taken over.
                             ++topQuad.MaxY;
@@ -179,10 +179,10 @@ namespace VoxelGame.Terrain.Meshing
             int w = quad.MaxX - quad.MinX;
             int h = quad.MaxY - quad.MinY;
 
-            int uvOffset = ((int)quad.Type.Clean() - 1) * 3 + TextureFaceOffsets[faceIndex];
+            int uvOffset = ((int)quad.Type - 1) * 3 + TextureFaceOffsets[faceIndex];
 
             Vector3[] vertices = Vertices[faceIndex];
-            Vector3[] uvs = UVs3[faceIndex];
+            Vector4[] uvs = UVs4[faceIndex];
 
             workspace.Normals.AddRange(Normals[faceIndex]);
 
@@ -204,7 +204,7 @@ namespace VoxelGame.Terrain.Meshing
                 Vector3 newVertex = ToLocalSpace(sliceVertex, normalAxis);
                 workspace.Vertices.Add(newVertex);
 
-                Vector3 uv = uvs[i];
+                Vector4 uv = uvs[i];
                 if (faceIndex is 0 or 3)
                 {
                     // Exception for +/-X for some reason I forgot about.
@@ -217,7 +217,11 @@ namespace VoxelGame.Terrain.Meshing
                     uv.y *= h;
                 }
                 uv.z += uvOffset;
-                workspace.UV3s.Add(uv);
+
+                VoxelTintType tintType = quad.Type.GetTintType();
+                uv.w = (int)tintType;
+
+                workspace.UV4s.Add(uv);
             }
         }
 

@@ -9,10 +9,7 @@ namespace VoxelGame.Terrain.ChunkTask
         public readonly GreedyMesherWorkspace GreedyMesherWorkspace;
         public readonly GrassMesherWorkspace GrassMesherWorkspace;
 
-        public static readonly Pool<ChunkMeshTaskPooledIn> Pool = new(
-            () => new ChunkMeshTaskPooledIn(),
-            10
-          );
+        public static readonly Pool<ChunkMeshTaskPooledIn> Pool = new(() => new ChunkMeshTaskPooledIn());
 
         public void OnBorrowed()
         {

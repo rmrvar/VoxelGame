@@ -26,20 +26,20 @@ namespace VoxelGame.Terrain
 			new Vector3[4] { new(0,0,0), new(0,1,0), new(1,1,0), new(1,0,0) },
 		};
 
-		public static Vector3[][] UVs3 { get; } = new Vector3[6][]
+		public static Vector4[][] UVs4 { get; } = new Vector4[6][]
 		{
 			// +X
-			new Vector3[4] { new(0, 0), new(0, 1), new(1, 1), new(1, 0), },
+			new Vector4[4] { new(0, 0), new(0, 1), new(1, 1), new(1, 0), },
 			// +Y
-			new Vector3[4] { new(0, 1), new(0, 0), new(1, 0), new(1, 1), },
+			new Vector4[4] { new(0, 1), new(0, 0), new(1, 0), new(1, 1), },
 			// +Z
-			new Vector3[4] { new(1, 0), new(0, 0), new(0, 1), new(1, 1), },
+			new Vector4[4] { new(1, 0), new(0, 0), new(0, 1), new(1, 1), },
 			// -X
-			new Vector3[4] { new(1, 0), new(0, 0), new(0, 1), new(1, 1), },
+			new Vector4[4] { new(1, 0), new(0, 0), new(0, 1), new(1, 1), },
 			// -Y
-			new Vector3[4] { new(0, 0), new(1, 0), new(1, 1), new(0, 1), },
+			new Vector4[4] { new(0, 0), new(1, 0), new(1, 1), new(0, 1), },
 			// -Z
-			new Vector3[4] { new(0, 0), new(0, 1), new(1, 1), new(1, 0), },
+			new Vector4[4] { new(0, 0), new(0, 1), new(1, 1), new(1, 0), },
 		};
 	
         public static Vector3[][] Normals { get; } = new Vector3[6][]
@@ -83,7 +83,7 @@ namespace VoxelGame.Terrain
             new(0, 0, 1),
         };
 
-        public static Vector3[] CrossQuadUVs3 { get; } = new Vector3[8]
+        public static Vector4[] CrossQuadUVs4 { get; } = new Vector4[8]
         {
             // QUAD 1
             new(0, 0),

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using VoxelGame.Pooling;
 using VoxelGame.Saving;
 using VoxelGame.Terrain.ChunkTask;
@@ -43,8 +44,8 @@ namespace VoxelGame.Terrain
         [SerializeField]
         private int _maxLazyExecutesPerFrame = 50;
 
-        [SerializeField]
-        private ChunkMono _chunkMonoPrefab;
+        [FormerlySerializedAs("_chunkMonoPrefab")] [SerializeField]
+        private ChunkPooledMono chunkPooledMonoPrefab;
 
         [SerializeField]
         private int _chunkMonoPoolRefillThreshold = 1000;
@@ -57,7 +58,7 @@ namespace VoxelGame.Terrain
         public static ChunkManager Instance { get; private set; }
 
         public SaveSystem SaveSystem { get; private set; }
-        public Pool<ChunkMono> ChunkMonoPool { get; private set; }
+        public Pool<ChunkPooledMono> ChunkMonoPool { get; private set; }
 
         public void ScheduleLoadTask(Chunk chunk)
         {
@@ -194,8 +195,8 @@ namespace VoxelGame.Terrain
 
             _scheduler = new ChunkTaskScheduler(_maxActiveTasks, _maxTaskExecutesPerSecond, _maxLazyExecutesPerFrame);
 
-            ChunkMonoPool = new Pool<ChunkMono>(
-                () => Instantiate(_chunkMonoPrefab, transform),
+            ChunkMonoPool = new Pool<ChunkPooledMono>(
+                () => Instantiate(chunkPooledMonoPrefab, transform),
                 _chunkMonoPoolRefillThreshold
               );
 
@@ -203,6 +204,9 @@ namespace VoxelGame.Terrain
             _chunkMonoPoolRefillTimer = _chunkMonoPoolRefillCooldown;
 
             VegetationSystem.Init();
+
+
+            PoolWarmer.Warm();
         }
 
         private void OnDestroy()
@@ -285,11 +289,11 @@ namespace VoxelGame.Terrain
 
                     if (_chunkIdToChunk.TryGetValue(chunkId, out var chunk))
                     {
-                        if (chunk.Mono != null)
+                        if (chunk.PooledMono != null)
                         {
                             float sqrDistance = (chunk.Center - _loadOrigin.position).sqrMagnitude;
                             bool shouldCollide = sqrDistance <= _collisionRadiusSqr;
-                            chunk.Mono.CanCollide = shouldCollide;
+                            chunk.PooledMono.CanCollide = shouldCollide;
                         }
                     }
                     else

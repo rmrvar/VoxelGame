@@ -3,7 +3,7 @@ using VoxelGame.Pooling;
 
 namespace VoxelGame.Terrain
 {
-    public class ChunkMono : MonoBehaviour, IPoolable
+    public class ChunkPooledMono : MonoBehaviour, IPoolable
     {
         [SerializeField]
         private MeshFilter _triggerMeshFilter;
@@ -18,7 +18,6 @@ namespace VoxelGame.Terrain
         private MeshRenderer _colliderMeshRenderer;
         [SerializeField]
         private MeshCollider _colliderMeshCollider;
-
 
         public Mesh TriggerMesh { get; private set; }
         public Mesh ColliderMesh { get; private set; }

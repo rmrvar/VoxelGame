@@ -9,10 +9,7 @@ namespace VoxelGame.Terrain.ChunkTask
         public readonly uint[] PoissonDisk;
         public PolytypeChunkData PolytypeChunkData;
 
-        public static readonly Pool<ChunkLoadTaskPooledIn> Pool = new(
-            () => new ChunkLoadTaskPooledIn(),
-            10
-          );
+        public static readonly Pool<ChunkLoadTaskPooledIn> Pool = new(() => new ChunkLoadTaskPooledIn());
 
         public void OnBorrowed()
         {

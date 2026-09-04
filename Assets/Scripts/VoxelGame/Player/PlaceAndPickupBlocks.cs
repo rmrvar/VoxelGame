@@ -62,9 +62,12 @@ namespace VoxelGame.Player
 
                     ConvertToPolytypeChunk(chunkToAffect);
 
-                    UpdateVoxel(chunkToAffect, indexToAffect, placeOrPickup ? VoxelType.DIRT : VoxelType.AIR);
-
-                    UpdateMeshes(chunkToAffect, posToAffect);
+                    UpdateChunkContent(
+                        chunkToAffect, 
+                        indexToAffect, 
+                        posToAffect,
+                        placeOrPickup ? VoxelType.DIRT : VoxelType.AIR
+                      );
                 }
             }
             finally
@@ -81,17 +84,57 @@ namespace VoxelGame.Player
             }
         }
 
-        private void UpdateVoxel(Chunk chunk, int i, VoxelType type)
+        private void UpdateChunkContent(
+            Chunk chunk, 
+            int i, 
+            Vector3Int localPosition,
+            VoxelType type
+          )
         {
+            VoxelType previousType = chunk.PolyData.Types[i];
             chunk.PolyData.Types[i] = type;
+
+            var indexToOriginalType = chunk.PolyData.IndexToOriginalType;
+
+            bool isPrevDirty = indexToOriginalType.TryGetValue(i, out VoxelType originalType);
+            bool isCurrDirty = (isPrevDirty && type != originalType) || type != previousType;
+            if (!isPrevDirty)
+            {
+                originalType = previousType;
+            }
+
+            // Update original voxel type.
+            if (isCurrDirty)
+            {
+                indexToOriginalType.TryAdd(i, originalType);
+            }
+            else
+            {
+                indexToOriginalType.Remove(i);
+            }
+
+            // Update dirtyness of this chunk.
+            if (isPrevDirty != isCurrDirty)
+            {
+                UpdateChunkDirtyness(
+                    chunk, 
+                    shouldIncrementDirtyCount: isCurrDirty
+                  );
+            }
+
+            Debug.Log($"Chunk {chunk.Id} Voxel {localPosition} was {(isPrevDirty ? "dirty" : "clean")} and is now {(isCurrDirty ? "dirty" : "clean")}!");
+
+            // Remesh this chunk.
             ++chunk.VoxelVersion;
-            ChunkManager.Instance.SaveSystem.MarkDirty(chunk.Id);
-        }
-        
-        private void UpdateMeshes(Chunk chunk, Vector3Int position)
-        {
             ChunkManager.Instance.ScheduleImmediateRemeshTask(chunk);
-            foreach (Vector3Int neighborPosition in GetNeighboringPositions(position))
+
+            if (type.IsSeeThrough() == previousType.IsSeeThrough())
+            {
+                return;
+            }
+
+            // Visibility changed. We need to remesh neighboring chunks and update their dirtyness.
+            foreach (Vector3Int neighborPosition in GetNeighboringPositions(localPosition))
             {
                 Vector3Int neighborChunkId = ChunkManager.Instance.GetChunkId(neighborPosition);
 
@@ -101,22 +144,55 @@ namespace VoxelGame.Player
                     continue; // We have already meshed this chunk.
                 }
 
-                ChunkManager.Instance.SaveSystem.MarkDirty(neighborChunkId);
+                UpdateChunkVisibility(
+                    neighborChunk, 
+                    shouldIncrementDirtyCount: type.IsSeeThrough() != originalType.IsSeeThrough()
+                  );
+            }
+        }
 
-                if (neighborChunk == null)
-                {
-                    // Only happens with really fast player and unloading, but shouldn't be
-                    // an issue with dirtiness.
-                    continue;
-                }
+        private void UpdateChunkVisibility(Chunk chunk, bool shouldIncrementDirtyCount)
+        {
+            if (chunk == null)
+            {
+                // TODO: Should probably not continue but do something similar to immediate reload task,
+                // but it's actually just adding an empty chunk to ChunkManager. Only happens with really
+                // fast player and unloading, but shouldn't be an issue with dirtiness.
+                Debug.LogAssertion("Uh-oh! We hit the UpdateChunkVisibility edge-case!");
+                return;
+            }
 
-                if (!neighborChunk.IsMaterializedPolytype)
-                {
-                    // We could technically render a dirty materialized monotype chunk, but
-                    // the save system wants all dirty chunks to be polytypes.
-                    ChunkManager.Instance.ScheduleImmediateReloadTask(neighborChunk);
-                }
-                ChunkManager.Instance.ScheduleImmediateRemeshTask(neighborChunk);
+            if (!chunk.IsMaterializedPolytype)
+            {
+                // We could technically render a dirty materialized monotype chunk, but
+                // the save system wants all dirty chunks to be polytypes.
+                ChunkManager.Instance.ScheduleImmediateReloadTask(chunk);
+            }
+
+            UpdateChunkDirtyness(chunk, shouldIncrementDirtyCount);
+
+            ChunkManager.Instance.ScheduleImmediateRemeshTask(chunk);
+        }
+
+        private void UpdateChunkDirtyness(Chunk chunk, bool shouldIncrementDirtyCount)
+        {
+            if (shouldIncrementDirtyCount)
+            {
+                ++chunk.DirtyCount;
+            }
+            else
+            {
+                --chunk.DirtyCount;
+            }
+            if (chunk.IsDirty)
+            {
+                Debug.Log($"Chunk {chunk.Id} is dirty with {chunk.DirtyCount} dirties!");
+                ChunkManager.Instance.SaveSystem.MarkDirty(chunk.Id);
+            }
+            else
+            {
+                Debug.Log($"Chunk {chunk.Id} is clean with {chunk.DirtyCount} dirties!");
+                ChunkManager.Instance.SaveSystem.MarkClean(chunk.Id);
             }
         }
 
