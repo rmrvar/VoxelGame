@@ -61,7 +61,7 @@ Shader "Terrain/ChunkCutoutShader"
                 Light mainLight = GetMainLight();
                 float3 lightVectorWS = mainLight.direction;
 
-                o.lighting = dot(normalWS, lightVectorWS);
+                o.lighting = saturate(dot(normalWS, lightVectorWS));
 
                 return o;
             }
@@ -80,17 +80,12 @@ Shader "Terrain/ChunkCutoutShader"
 
                 clip(tex.a - 0.1);
 
-                float actualLighting = i.lighting;
-			    if (!isFrontFace)
-			    {
-			        actualLighting = -actualLighting;
-			    }
-                actualLighting = lerp(0.3, 1, saturate(actualLighting));
+                float lighting = lerp(0.3, 1, lerp(-i.lighting, i.lighting, isFrontFace));
 
                 half3 base = tex.rgb;
                 bool shouldTint = i.uv.w;
                 half3 tint = lerp(1, _Tint, shouldTint);
-                half3 rgb = base * tint * actualLighting;
+                half3 rgb = base * tint * lighting;
 
                 return half4(rgb, 1);
             }
