@@ -329,9 +329,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0c356fb447aed0459faa47db9afcdb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  <Seed>k__BackingField: 42
+  <Seed>k__BackingField: -1
   _shouldLockTo60FPS: 1
-  _shouldLoad: 0
+  _shouldLoad: 1
   _shouldSave: 1
   _chunkSize: {x: 50, y: 50, z: 50}
   _loadOrigin: {fileID: 1828581181}
@@ -342,7 +342,7 @@ MonoBehaviour:
   _maxActiveTasks: -1
   _maxTaskExecutesPerSecond: 100
   _maxLazyExecutesPerFrame: 50
-  _chunkMonoPrefab: {fileID: 353645850060703695, guid: 5d78c3d49de314747921acdf12eb90d4, type: 3}
+  chunkPooledMonoPrefab: {fileID: 353645850060703695, guid: 5d78c3d49de314747921acdf12eb90d4, type: 3}
   _chunkMonoPoolRefillThreshold: 5000
   _chunkMonoPoolRefillRate: 10
   VegetationSystem:
@@ -413,6 +413,14 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 7b039286ed9500c45a09b17a0c899812, type: 2}
     - {fileID: 11400000, guid: 7b039286ed9500c45a09b17a0c899812, type: 2}
     - {fileID: 11400000, guid: 7b039286ed9500c45a09b17a0c899812, type: 2}
+    - {fileID: 11400000, guid: 7b039286ed9500c45a09b17a0c899812, type: 2}
+    - {fileID: 11400000, guid: 4c3d92e16eb7a644c8f969e8a78a8158, type: 2}
+    - {fileID: 11400000, guid: 4c3d92e16eb7a644c8f969e8a78a8158, type: 2}
+    - {fileID: 11400000, guid: 4c3d92e16eb7a644c8f969e8a78a8158, type: 2}
+    - {fileID: 11400000, guid: 4c3d92e16eb7a644c8f969e8a78a8158, type: 2}
+    - {fileID: 11400000, guid: 4c3d92e16eb7a644c8f969e8a78a8158, type: 2}
+    - {fileID: 11400000, guid: 4c3d92e16eb7a644c8f969e8a78a8158, type: 2}
+    - {fileID: 11400000, guid: 4c3d92e16eb7a644c8f969e8a78a8158, type: 2}
 --- !u!4 &1531652811
 Transform:
   m_ObjectHideFlags: 0
@@ -771,7 +779,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3171374566700308657, guid: 6de2b385e5837ba45a04b5198c143d7c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 19.78
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 3171374566700308657, guid: 6de2b385e5837ba45a04b5198c143d7c, type: 3}
       propertyPath: m_LocalPosition.z

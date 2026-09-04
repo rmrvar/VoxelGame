@@ -1,5 +1,4 @@
-﻿using UnityEditor.Rendering;
-using UnityEngine;
+﻿using UnityEngine;
 using static VoxelGame.Terrain.VoxelData;
 
 namespace VoxelGame.Terrain.Meshing

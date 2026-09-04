@@ -153,6 +153,11 @@ namespace VoxelGame.Terrain
 #endif
 			Instance = this;
 
+            if (Seed < 0)
+            {
+                Seed = Mathf.FloorToInt(Random.value * 100_000);
+            }
+
             if (_shouldLockTo60FPS)
             {
                 Application.targetFrameRate = 60;
