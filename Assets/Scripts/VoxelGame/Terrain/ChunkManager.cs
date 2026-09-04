@@ -13,7 +13,7 @@ namespace VoxelGame.Terrain
 	public class ChunkManager : MonoBehaviour
 	{
 		[field: SerializeField]
-        public int Seed { get; private set; }
+        public int Seed { get; set; }
 
         [SerializeField]
         private bool _shouldLockTo60FPS = false;
@@ -158,6 +158,12 @@ namespace VoxelGame.Terrain
                 Seed = Mathf.FloorToInt(Random.value * 100_000);
             }
 
+            SaveSystem = new SaveSystem();
+            if (_shouldLoad)
+            {
+                SaveSystem.Load();
+            }
+
             if (_shouldLockTo60FPS)
             {
                 Application.targetFrameRate = 60;
@@ -166,12 +172,6 @@ namespace VoxelGame.Terrain
             {
                 QualitySettings.vSyncCount = 0;
                 Application.targetFrameRate = -1;
-            }
-
-            SaveSystem = new SaveSystem();
-            if (_shouldLoad)
-            {
-                SaveSystem.Load();
             }
 
             Random.InitState(Seed);

@@ -46,6 +46,12 @@ namespace VoxelGame.Saving
                 return;
             }
 
+            int seed = PlayerPrefs.GetInt("SEED");
+            if (seed != ChunkManager.Instance.Seed)
+            {
+                ChunkManager.Instance.Seed = seed;
+            }
+
             string dirtyChunkIdsText = PlayerPrefs.GetString("DIRTY_CHUNK_IDS");
             List<Vector3Int> dirtyChunkIds = DeserializeVectorList(dirtyChunkIdsText);
             if (dirtyChunkIds.Count <= 0)
@@ -71,6 +77,8 @@ namespace VoxelGame.Saving
 			PlayerPrefs.SetInt("HAS_SAVE", 1);
 
             PlayerPrefs.SetString("VERSION", _version);
+
+            PlayerPrefs.SetInt("SEED", ChunkManager.Instance.Seed);
 
             string dirtyChunkIdsText = SerializeVectorList(_dirtyChunkIds.ToList());
             PlayerPrefs.SetString("DIRTY_CHUNK_IDS", dirtyChunkIdsText);
