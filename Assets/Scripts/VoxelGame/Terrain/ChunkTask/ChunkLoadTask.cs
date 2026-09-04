@@ -414,7 +414,7 @@ namespace VoxelGame.Terrain.ChunkTask
         private readonly bool _isReload;
     }
 
-    public class ChunkLoadTaskIn : IDisposable
+    public readonly struct ChunkLoadTaskIn : IDisposable
     {
         public readonly int Seed;
         public readonly Vector3Int Position;
@@ -435,7 +435,7 @@ namespace VoxelGame.Terrain.ChunkTask
         }
     }
 
-    public class ChunkLoadTaskOut
+    public struct ChunkLoadTaskOut
     {
         public ChunkLoadTaskIn Input;
         public bool IsMonotype;

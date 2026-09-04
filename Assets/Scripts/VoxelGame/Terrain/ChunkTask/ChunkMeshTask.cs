@@ -38,7 +38,7 @@ namespace VoxelGame.Terrain.ChunkTask
 
         protected override ChunkMeshTaskIn PrepareInput()
         {
-            ChunkMeshTaskIn input = new();
+            ChunkMeshTaskIn input = ChunkMeshTaskIn.Create();
             CopyVoxels(input.PooledIn.Voxels);
             return input;
         }
@@ -363,22 +363,28 @@ namespace VoxelGame.Terrain.ChunkTask
         private readonly bool _isRemesh;
     }
 
-    public class ChunkMeshTaskIn : IDisposable
+    public readonly struct ChunkMeshTaskIn : IDisposable
     {
-        public ChunkMeshTaskPooledIn PooledIn;
+        public readonly ChunkMeshTaskPooledIn PooledIn;
 
-        public ChunkMeshTaskIn()
+        // Because stupid C# doesn't allow us to have a constructor with a default parameter, we have to use this static method instead.
+        public static ChunkMeshTaskIn Create()
         {
-            PooledIn = ChunkMeshTaskPooledIn.Pool.Borrow();
+            return new ChunkMeshTaskIn(ChunkMeshTaskPooledIn.Pool.Borrow());
         }
 
         public void Dispose()
         {
             ChunkMeshTaskPooledIn.Pool.Return(PooledIn);
         }
+
+        private ChunkMeshTaskIn(ChunkMeshTaskPooledIn pooledIn)
+        {
+            PooledIn = pooledIn;
+        }
     }
 
-    public class ChunkMeshTaskOut
+    public struct ChunkMeshTaskOut
     {
         public GreedyMesherWorkspace GreedyMesherWorkspace;
         public GrassMesherWorkspace GrassMesherWorkspace;

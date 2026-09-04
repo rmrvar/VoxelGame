@@ -116,13 +116,15 @@ namespace VoxelGame.Terrain
 
         public void SetChunkHeightRange(Vector3Int id, int minHeight, int maxHeight)
         {
-            Vector2Int id2 = new Vector2Int(id.x, id.z);
-            _chunkIdXZToHeightRange[id2] = new Vector2Int(minHeight, maxHeight);
+            Vector2Int idXZ = new Vector2Int(id.x, id.z);
+            _chunkIdXZToHeightRange[idXZ] = new Vector2Int(minHeight, maxHeight);
         }
 
         public Vector3Int GetChunkId(Vector3 pos)
         {
-            pos.Scale(new Vector3(1.0F / ChunkConfig.SizeX, 1.0F / ChunkConfig.SizeY, 1.0F / ChunkConfig.SizeZ));
+            pos.x /= ChunkConfig.SizeX;
+            pos.y /= ChunkConfig.SizeY;
+            pos.z /= ChunkConfig.SizeZ;
             return new Vector3Int(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z));
         }
 
@@ -271,7 +273,11 @@ namespace VoxelGame.Terrain
 
                 _neighborX = null;
 
-                Vector3Int chunkId = _currChunkId + new Vector3Int(-_ratioX, y, z);
+                Vector3Int chunkId = new Vector3Int(
+                    _currChunkId.x - _ratioX, 
+                    _currChunkId.y + y, 
+                    _currChunkId.z + z
+                  );
 
                 for (int x = -_ratioX; x <= _ratioX; ++x)
                 {
@@ -335,8 +341,8 @@ namespace VoxelGame.Terrain
         private Chunk[] _neighborY;
         private Chunk[,] _neighborZ;
 
-        private readonly Dictionary<Vector3Int, Chunk> _chunkIdToChunk = new(10000);
-        private readonly Dictionary<Vector2Int, Vector2Int> _chunkIdXZToHeightRange = new(1000);
+        private readonly Dictionary<Vector3Int, Chunk> _chunkIdToChunk = new(30000);
+        private readonly Dictionary<Vector2Int, Vector2Int> _chunkIdXZToHeightRange = new(10000);
 		private float _chunkRefreshTimer;
 
         private ChunkTaskScheduler _scheduler;
