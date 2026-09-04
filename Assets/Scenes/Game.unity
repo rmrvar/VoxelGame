@@ -343,7 +343,7 @@ MonoBehaviour:
   _maxTaskExecutesPerSecond: 100
   _maxLazyExecutesPerFrame: 50
   _chunkMonoPrefab: {fileID: 353645850060703695, guid: 5d78c3d49de314747921acdf12eb90d4, type: 3}
-  _chunkMonoPoolRefillThreshold: 1000
+  _chunkMonoPoolRefillThreshold: 5000
   _chunkMonoPoolRefillRate: 10
   VegetationSystem:
     _treeSOs:

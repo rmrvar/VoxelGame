@@ -10,7 +10,7 @@ namespace VoxelGame.Terrain
 
         public static readonly Pool<PolytypeChunkPooledVegetationData> Pool = new(
             () => new PolytypeChunkPooledVegetationData(),
-            1000
+            5000
           );
 
         public void OnBorrowed()
